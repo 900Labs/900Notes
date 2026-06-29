@@ -1,0 +1,9 @@
+{
+  "id": "com.example.wordcount",
+  "name": "Word Count",
+  "version": "1.0.0",
+  "author": "900 Labs",
+  "description": "Adds a word count command that counts words in the current page.",
+  "entryPoint": "index.js",
+  "customBlocks": []
+}

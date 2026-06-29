@@ -1,0 +1,25 @@
+{
+  "id": "com.example.callout",
+  "name": "Callout Block",
+  "version": "1.0.0",
+  "author": "900 Labs",
+  "description": "Adds a callout block type for highlighting important notes with variants (info, warning, tip, danger).",
+  "entryPoint": "index.js",
+  "customBlocks": [
+    {
+      "nodeType": "callout",
+      "group": "block",
+      "content": "inline*",
+      "attrs": {
+        "variant": {
+          "default": "info",
+          "validate": "string"
+        }
+      },
+      "toDom": "(node) => ['div', { class: 'callout callout-' + node.attrs.variant, 'data-variant': node.attrs.variant }, 0]",
+      "parseDom": "[{ tag: 'div.callout', getAttrs: (dom) => ({ variant: dom.getAttribute('data-variant') || 'info' }) }]",
+      "icon": "💡",
+      "label": "Callout"
+    }
+  ]
+}
