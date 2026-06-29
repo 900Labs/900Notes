@@ -45,20 +45,20 @@
   }
 </script>
 
-<div class="flex flex-col h-full">
-  <div class="px-3 py-2.5 border-b border-gray-200 dark:border-gray-700">
-    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">{$t('outline.title')}</h3>
+<div class="flex flex-col h-full bg-white dark:bg-gray-900">
+  <div class="px-3 py-2.5 border-b border-gray-200 dark:border-gray-800">
+    <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{$t('outline.title')}</h3>
   </div>
 
   <div class="flex-1 overflow-y-auto p-2">
     {#if headings.length === 0}
-      <p class="text-xs text-gray-400 px-2 py-4">{$t('outline.empty')}</p>
+      <p class="text-xs text-gray-400 dark:text-gray-600 px-2 py-4">{$t('outline.empty')}</p>
     {:else}
       <div class="space-y-0.5">
         {#each headings as heading, i (i)}
           <button
             onclick={() => onHeadingClick(heading.pos)}
-            class="w-full text-left py-1 px-2 rounded text-sm hover:bg-gray-200 dark:hover:bg-gray-700 truncate"
+            class="w-full text-left py-1 px-2 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-800 truncate text-gray-700 dark:text-gray-300 transition-colors"
             style="padding-left: {heading.level * 12 + 8}px"
             title={heading.text}
           >

@@ -193,10 +193,10 @@
 </script>
 
 {#if encryptionStore.enabled && !encryptionStore.unlocked}
-  <div class="flex h-screen w-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
-    <div class="w-full max-w-sm space-y-6 rounded-xl bg-white dark:bg-gray-800 p-8 shadow-lg">
+  <div class="flex h-screen w-screen items-center justify-center bg-gray-50 dark:bg-gray-950">
+    <div class="w-full max-w-sm space-y-6 rounded-xl bg-white dark:bg-gray-900 p-8 shadow-xl border border-gray-200 dark:border-gray-800">
       <div class="text-center">
-        <svg class="w-12 h-12 mx-auto mb-3 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-12 h-12 mx-auto mb-3 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
         </svg>
         <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100">{$t('security.unlockDatabase')}</h1>
@@ -213,14 +213,14 @@
           bind:value={unlockPassphrase}
           onkeydown={(e) => { if (e.key === 'Enter') handleUnlock() }}
           placeholder={$t('security.passphrase')}
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-gray-900 dark:text-gray-100 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+          class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-colors"
           disabled={isUnlocking}
         />
         <button
           type="button"
           onclick={handleUnlock}
           disabled={isUnlocking || !unlockPassphrase}
-          class="w-full rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2.5 text-white font-medium transition-colors"
+          class="w-full rounded-lg bg-accent hover:bg-accent-dark disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2.5 text-white font-medium transition-colors"
         >
           {isUnlocking ? '...' : $t('security.unlock')}
         </button>
@@ -228,7 +228,7 @@
     </div>
   </div>
 {:else}
-<div class="flex h-screen w-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+<div class="flex h-screen w-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">
   <a href="#main-content" class="skip-link">{$t('a11y.skipToContent')}</a>
   <Sidebar
     onPageSelect={handlePageSelect}
@@ -236,7 +236,7 @@
     onOpenSettings={() => (showSettings = true)}
   />
 
-  <main id="main-content" class="flex-1 flex flex-col overflow-hidden" aria-label="{$t('a11y.mainContent')}">
+  <main id="main-content" class="flex-1 flex flex-col overflow-hidden min-w-0" aria-label="{$t('a11y.mainContent')}">
     {#if showGraph}
       <GraphView onNavigate={(id) => { showGraph = false; handlePageSelect(id) }} />
     {:else if pageStore.currentPage}
@@ -246,20 +246,26 @@
         {showOutline}
       />
     {:else}
-      <div class="flex-1 flex items-center justify-center text-gray-400 dark:text-gray-600">
+      <div class="flex-1 flex items-center justify-center text-gray-400 dark:text-gray-600 bg-gray-50 dark:bg-gray-950">
         <div class="text-center">
-          <svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-16 h-16 mx-auto mb-4 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
-          <p class="text-lg font-medium">{$t('app.title')}</p>
-          <p class="text-sm mt-1">{$t('app.tagline')}</p>
+          <p class="text-lg font-medium text-gray-500 dark:text-gray-400">{$t('app.title')}</p>
+          <p class="text-sm mt-1 text-gray-400 dark:text-gray-600">{$t('app.tagline')}</p>
+          <button
+            onclick={() => handleCommandAction('newPage')}
+            class="mt-6 px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent-dark transition-colors"
+          >
+            {$t('sidebar.newPage')}
+          </button>
         </div>
       </div>
     {/if}
   </main>
 
   {#if showOutline && pageStore.currentPage}
-    <aside class="w-56 h-full bg-gray-50 dark:bg-gray-800/50 border-l border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden">
+    <aside class="w-56 h-full bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden shrink-0">
       <OutlinePanel
         content={pageStore.currentPage.content}
         onHeadingClick={() => {}}
@@ -272,13 +278,13 @@
   {/if}
 
   {#if showHistory && pageStore.currentPage}
-    <aside class="w-64 h-full bg-gray-50 dark:bg-gray-800/50 border-l border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden">
+    <aside class="w-64 h-full bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden shrink-0">
       <HistoryPanel onPageRestored={handlePageSelect} />
     </aside>
   {/if}
 
   {#if showRelated && pageStore.currentPage}
-    <aside class="w-64 h-full bg-gray-50 dark:bg-gray-800/50 border-l border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden">
+    <aside class="w-64 h-full bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden shrink-0">
       <RelatedPagesPanel onNavigate={handlePageSelect} />
     </aside>
   {/if}

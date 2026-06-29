@@ -232,48 +232,48 @@
     tabindex="-1"
   >
     <!-- Sidebar -->
-    <div class="w-48 bg-gray-50 dark:bg-gray-900/50 border-r border-gray-200 dark:border-gray-700 p-2">
-      <div class="px-2 py-3 text-sm font-semibold">{$t('settings.title')}</div>
+    <div class="w-48 bg-gray-50 dark:bg-gray-900/50 border-r border-gray-200 dark:border-gray-700 p-2 shrink-0">
+      <div class="px-2 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100">{$t('settings.title')}</div>
       <button
         onclick={() => (activeSection = 'appearance')}
-        class="w-full text-left px-2 py-1.5 rounded text-sm {activeSection === 'appearance' ? 'bg-accent/10 text-accent' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}"
+        class="w-full text-left px-2 py-1.5 rounded-md text-sm {activeSection === 'appearance' ? 'bg-accent/10 text-accent font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}"
       >{$t('settings.theme')}</button>
       <button
         onclick={() => (activeSection = 'language')}
-        class="w-full text-left px-2 py-1.5 rounded text-sm {activeSection === 'language' ? 'bg-accent/10 text-accent' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}"
+        class="w-full text-left px-2 py-1.5 rounded-md text-sm {activeSection === 'language' ? 'bg-accent/10 text-accent font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}"
       >{$t('settings.language')}</button>
       <button
         onclick={() => (activeSection = 'data')}
-        class="w-full text-left px-2 py-1.5 rounded text-sm {activeSection === 'data' ? 'bg-accent/10 text-accent' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}"
+        class="w-full text-left px-2 py-1.5 rounded-md text-sm {activeSection === 'data' ? 'bg-accent/10 text-accent font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}"
       >{$t('settings.dataLocation')}</button>
       <button
         onclick={() => { activeSection = 'sync'; syncStore.loadStatus() }}
-        class="w-full text-left px-2 py-1.5 rounded text-sm {activeSection === 'sync' ? 'bg-accent/10 text-accent' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}"
+        class="w-full text-left px-2 py-1.5 rounded-md text-sm {activeSection === 'sync' ? 'bg-accent/10 text-accent font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}"
       >{$t('sync.title')}</button>
       <button
         onclick={() => (activeSection = 'sharing')}
-        class="w-full text-left px-2 py-1.5 rounded text-sm {activeSection === 'sharing' ? 'bg-accent/10 text-accent' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}"
+        class="w-full text-left px-2 py-1.5 rounded-md text-sm {activeSection === 'sharing' ? 'bg-accent/10 text-accent font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}"
       >{$t('sharing.title')}</button>
       <button
         onclick={() => { activeSection = 'workspaces'; workspaceStore.load() }}
-        class="w-full text-left px-2 py-1.5 rounded text-sm {activeSection === 'workspaces' ? 'bg-accent/10 text-accent' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}"
+        class="w-full text-left px-2 py-1.5 rounded-md text-sm {activeSection === 'workspaces' ? 'bg-accent/10 text-accent font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}"
       >{$t('workspaces.title')}</button>
       <button
         onclick={() => { activeSection = 'security'; encryptionStore.checkStatus() }}
-        class="w-full text-left px-2 py-1.5 rounded text-sm {activeSection === 'security' ? 'bg-accent/10 text-accent' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}"
+        class="w-full text-left px-2 py-1.5 rounded-md text-sm {activeSection === 'security' ? 'bg-accent/10 text-accent font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}"
       >{$t('security.title')}</button>
       <button
         onclick={() => { activeSection = 'plugins'; pluginStore.loadPlugins() }}
-        class="w-full text-left px-2 py-1.5 rounded text-sm {activeSection === 'plugins' ? 'bg-accent/10 text-accent' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}"
+        class="w-full text-left px-2 py-1.5 rounded-md text-sm {activeSection === 'plugins' ? 'bg-accent/10 text-accent font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}"
       >Plugins</button>
       <button
         onclick={() => (activeSection = 'about')}
-        class="w-full text-left px-2 py-1.5 rounded text-sm {activeSection === 'about' ? 'bg-accent/10 text-accent' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}"
+        class="w-full text-left px-2 py-1.5 rounded-md text-sm {activeSection === 'about' ? 'bg-accent/10 text-accent font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}"
       >{$t('settings.about')}</button>
     </div>
 
     <!-- Content -->
-    <div class="flex-1 p-6 overflow-y-auto">
+    <div class="flex-1 p-6 overflow-y-auto text-gray-900 dark:text-gray-100">
       {#if activeSection === 'appearance'}
         <h2 class="text-lg font-semibold mb-4">{$t('settings.theme')}</h2>
         <div class="space-y-3">
@@ -340,7 +340,7 @@
       {:else if activeSection === 'data'}
         <h2 class="text-lg font-semibold mb-4">{$t('settings.dataLocation')}</h2>
         <div class="space-y-4">
-          <p class="text-sm text-gray-500">
+          <p class="text-sm text-gray-500 dark:text-gray-400">
             All data is stored locally in a single SQLite file. No cloud. No server.
           </p>
           <div class="flex gap-2">
@@ -357,7 +357,7 @@
       {:else if activeSection === 'sync'}
         <h2 class="text-lg font-semibold mb-4">{$t('sync.title')}</h2>
         <div class="space-y-4">
-          <p class="text-sm text-gray-500">
+          <p class="text-sm text-gray-500 dark:text-gray-400">
             {$t('sync.description')}
           </p>
 
@@ -370,7 +370,7 @@
                   type="text"
                   bind:value={deviceName}
                   placeholder={$t('sync.deviceNamePlaceholder')}
-                  class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
+                  class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                 />
               </div>
               <div>
@@ -381,7 +381,7 @@
                   bind:value={port}
                   min="1024"
                   max="65535"
-                  class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
+                  class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                 />
               </div>
               <div>
@@ -392,7 +392,7 @@
                   bind:value={syncPairingSecret}
                   minlength="12"
                   autocomplete="new-password"
-                  class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
+                  class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                 />
                 <p class="mt-1 text-xs text-gray-500">{$t('sync.pairingSecretHelp')}</p>
               </div>
@@ -471,19 +471,19 @@
         <div class="space-y-6">
           <div>
             <h3 class="text-sm font-semibold mb-2">{$t('sharing.exportBundle')}</h3>
-            <p class="text-sm text-gray-500 mb-3">{$t('sharing.exportDescription')}</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">{$t('sharing.exportDescription')}</p>
             <div class="space-y-2">
               <input
                 type="text"
                 bind:value={sharePageIds}
                 placeholder={$t('sharing.pageIdsPlaceholder')}
-                class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
+                class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
               <input
                 type="password"
                 bind:value={sharePassphrase}
                 placeholder={$t('sharing.passphrase')}
-                class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
+                class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
               <button
                 onclick={handleExportShareBundle}
@@ -495,13 +495,13 @@
 
           <div>
             <h3 class="text-sm font-semibold mb-2">{$t('sharing.importBundle')}</h3>
-            <p class="text-sm text-gray-500 mb-3">{$t('sharing.importDescription')}</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">{$t('sharing.importDescription')}</p>
             <div class="space-y-2">
               <input
                 type="password"
                 bind:value={importPassphrase}
                 placeholder={$t('sharing.passphrase')}
-                class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
+                class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
               <button
                 onclick={handleImportShareBundle}
@@ -513,7 +513,7 @@
 
           <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
             <h3 class="text-sm font-semibold mb-2">{$t('sharing.htmlExport')}</h3>
-            <p class="text-sm text-gray-500 mb-3">{$t('sharing.htmlExportDescription')}</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">{$t('sharing.htmlExportDescription')}</p>
             <button
               onclick={handleExportPageHtml}
               disabled={!pageStore.currentPage}
@@ -524,7 +524,7 @@
       {:else if activeSection === 'workspaces'}
         <h2 class="text-lg font-semibold mb-4">{$t('workspaces.title')}</h2>
         <div class="space-y-4">
-          <p class="text-sm text-gray-500">{$t('workspaces.description')}</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400">{$t('workspaces.description')}</p>
 
           <div class="space-y-2">
             {#each workspaceStore.workspaces as ws (ws.id)}
@@ -576,7 +576,7 @@
       {:else if activeSection === 'security'}
         <h2 class="text-lg font-semibold mb-4">{$t('security.title')}</h2>
         <div class="space-y-6">
-          <p class="text-sm text-gray-500">{$t('security.description')}</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400">{$t('security.description')}</p>
 
           {#if encryptionStore.error}
             <div class="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
@@ -587,18 +587,18 @@
           {#if !encryptionStore.enabled}
             <div class="space-y-3">
               <h3 class="text-sm font-semibold">{$t('security.enableEncryption')}</h3>
-              <p class="text-sm text-gray-500">{$t('security.enableDescription')}</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400">{$t('security.enableDescription')}</p>
               <input
                 type="password"
                 bind:value={enablePassphrase}
                 placeholder={$t('security.passphrase')}
-                class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
+                class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
               <input
                 type="password"
                 bind:value={enableConfirm}
                 placeholder={$t('security.confirmPassphrase')}
-                class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
+                class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
               {#if enablePassphrase && enableConfirm && enablePassphrase !== enableConfirm}
                 <p class="text-xs text-red-500">{$t('security.passphraseMismatch')}</p>
@@ -612,12 +612,12 @@
           {:else if !encryptionStore.unlocked}
             <div class="space-y-3">
               <h3 class="text-sm font-semibold">{$t('security.unlockDatabase')}</h3>
-              <p class="text-sm text-gray-500">{$t('security.unlockDescription')}</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400">{$t('security.unlockDescription')}</p>
               <input
                 type="password"
                 bind:value={unlockPassphrase}
                 placeholder={$t('security.passphrase')}
-                class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
+                class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
               <button
                 onclick={handleUnlock}
@@ -639,13 +639,13 @@
                 type="password"
                 bind:value={changeOldPassphrase}
                 placeholder={$t('security.currentPassphrase')}
-                class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
+                class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
               <input
                 type="password"
                 bind:value={changeNewPassphrase}
                 placeholder={$t('security.newPassphrase')}
-                class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
+                class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
               <button
                 onclick={handleChangePassphrase}
@@ -661,7 +661,7 @@
                 type="password"
                 bind:value={disablePassphrase}
                 placeholder={$t('security.passphrase')}
-                class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
+                class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
               <button
                 onclick={handleDisableEncryption}
@@ -673,12 +673,12 @@
 
           <div class="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-3">
             <h3 class="text-sm font-semibold">{$t('security.encryptedExport')}</h3>
-            <p class="text-sm text-gray-500">{$t('security.encryptedExportDescription')}</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">{$t('security.encryptedExportDescription')}</p>
             <input
               type="password"
               bind:value={exportEncPassphrase}
               placeholder={$t('security.exportPassphrase')}
-              class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
+              class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
             />
             <div class="flex gap-2">
               <button
@@ -696,12 +696,12 @@
 
           <div class="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-3">
             <h3 class="text-sm font-semibold">{$t('security.secureDelete')}</h3>
-            <p class="text-sm text-gray-500">{$t('security.secureDeleteDescription')}</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">{$t('security.secureDeleteDescription')}</p>
             <input
               type="text"
               bind:value={secureDeletePageId}
               placeholder="Page ID (leave empty to delete current page)"
-              class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
+              class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
             />
             <div class="flex gap-2">
               <button
@@ -719,9 +719,9 @@
         <h2 class="text-lg font-semibold mb-4">Plugins</h2>
         <div class="space-y-3">
           {#if pluginStore.loading}
-            <p class="text-sm text-gray-500">Loading...</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Loading...</p>
           {:else if pluginStore.plugins.length === 0}
-            <p class="text-sm text-gray-500">No plugins installed. Place plugin directories in the <code class="text-xs bg-gray-100 dark:bg-gray-800 px-1 rounded">plugins/</code> folder in your app data directory and click "Scan for Plugins".</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">No plugins installed. Place plugin directories in the <code class="text-xs bg-gray-100 dark:bg-gray-800 px-1 rounded">plugins/</code> folder in your app data directory and click "Scan for Plugins".</p>
           {:else}
             {#each pluginStore.plugins as plugin (plugin.id)}
               <div class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700">
@@ -760,19 +760,22 @@
         <h2 class="text-lg font-semibold mb-4">{$t('settings.about')}</h2>
         <div class="space-y-3 text-sm">
           <div>
-            <span class="text-gray-500">{$t('settings.version')}: </span>
+            <span class="text-gray-500 dark:text-gray-400">{$t('settings.version')}: </span>
             <span class="font-medium">0.1.0</span>
           </div>
           <div>
-            <span class="text-gray-500">{$t('settings.license')}: </span>
+            <span class="text-gray-500 dark:text-gray-400">{$t('settings.license')}: </span>
             <span class="font-medium">Apache 2.0</span>
           </div>
           <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
-            <p class="text-gray-500">
-              {$t('app.tagline')}. Built by <a href="https://www.900labs.com" class="text-accent hover:underline" target="_blank" rel="noreferrer">900 Labs</a> — open source tools for developing economies.
+            <p class="text-gray-600 dark:text-gray-400">
+              900Notes is a note-taking app that works completely offline. Your notes stay on your computer. No subscriptions, no cloud, no account required.
             </p>
-            <p class="text-gray-400 text-xs mt-2">
-              Free. Offline. Yours.
+            <p class="text-gray-500 dark:text-gray-500 text-xs mt-3">
+              Built by <a href="https://www.900labs.com" class="text-accent hover:underline" target="_blank" rel="noreferrer">900 Labs</a>. Open source tools for people who get priced out of the software they need.
+            </p>
+            <p class="text-gray-400 dark:text-gray-600 text-xs mt-2">
+              Free. Forever.
             </p>
           </div>
         </div>

@@ -105,16 +105,16 @@
 </script>
 
 {#if !collapsed}
-  <aside class="w-64 h-full bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+  <aside class="w-64 h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col shrink-0">
     <!-- Header -->
-    <div class="p-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+    <div class="px-3 py-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
       <div class="flex items-center gap-2">
         <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
-        <span class="font-semibold text-sm">{$t('app.title')}</span>
+        <span class="font-semibold text-sm text-gray-900 dark:text-gray-100">{$t('app.title')}</span>
       </div>
-      <button onclick={() => (collapsed = true)} class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700" title={$t('sidebar.collapse')}>
+      <button onclick={() => (collapsed = true)} class="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" title={$t('sidebar.collapse')} aria-label={$t('sidebar.collapse')}>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
         </svg>
@@ -122,10 +122,10 @@
     </div>
 
     <!-- New Page Button -->
-    <div class="p-2">
+    <div class="px-3 pt-3 pb-2">
       <button
         onclick={() => handleNewPage(null)}
-        class="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent-dark transition-colors"
+        class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent-dark transition-colors shadow-sm"
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -134,36 +134,36 @@
       </button>
     </div>
 
-    <!-- Tabs -->
-    <div class="flex border-b border-gray-200 dark:border-gray-700 px-2">
+    <!-- Tabs - scrollable to prevent overflow -->
+    <div class="flex overflow-x-auto border-b border-gray-200 dark:border-gray-800 px-2 scrollbar-none" style="scrollbar-width: none;">
       <button
         onclick={() => (settingsStore.sidebarTab = 'pages')}
-        class="px-2 py-1.5 text-xs font-medium {activeTab === 'pages' ? 'text-accent border-b-2 border-accent' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}"
+        class="px-2.5 py-2 text-xs font-medium whitespace-nowrap {activeTab === 'pages' ? 'text-accent border-b-2 border-accent' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}"
       >{$t('sidebar.pages')}</button>
       <button
         onclick={() => (settingsStore.sidebarTab = 'tags')}
-        class="px-2 py-1.5 text-xs font-medium {activeTab === 'tags' ? 'text-accent border-b-2 border-accent' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}"
+        class="px-2.5 py-2 text-xs font-medium whitespace-nowrap {activeTab === 'tags' ? 'text-accent border-b-2 border-accent' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}"
       >{$t('sidebar.tags')}</button>
       <button
         onclick={() => (settingsStore.sidebarTab = 'recent')}
-        class="px-2 py-1.5 text-xs font-medium {activeTab === 'recent' ? 'text-accent border-b-2 border-accent' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}"
+        class="px-2.5 py-2 text-xs font-medium whitespace-nowrap {activeTab === 'recent' ? 'text-accent border-b-2 border-accent' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}"
       >{$t('sidebar.recent')}</button>
       <button
         onclick={() => { settingsStore.sidebarTab = 'trash'; pageStore.loadTrash() }}
-        class="px-2 py-1.5 text-xs font-medium {activeTab === 'trash' ? 'text-accent border-b-2 border-accent' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}"
+        class="px-2.5 py-2 text-xs font-medium whitespace-nowrap {activeTab === 'trash' ? 'text-accent border-b-2 border-accent' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}"
       >{$t('sidebar.trash')}</button>
       <button
         onclick={() => { settingsStore.sidebarTab = 'smart'; searchStore.loadSavedSearches(); searchStore.loadSmartFolders() }}
-        class="px-2 py-1.5 text-xs font-medium {activeTab === 'smart' ? 'text-accent border-b-2 border-accent' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}"
+        class="px-2.5 py-2 text-xs font-medium whitespace-nowrap {activeTab === 'smart' ? 'text-accent border-b-2 border-accent' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}"
       >{$t('smartFolder.title')}</button>
       <button
         onclick={() => { settingsStore.sidebarTab = 'favorites'; historyStore.loadFavorites() }}
-        class="px-2 py-1.5 text-xs font-medium {activeTab === 'favorites' ? 'text-accent border-b-2 border-accent' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}"
+        class="px-2.5 py-2 text-xs font-medium whitespace-nowrap {activeTab === 'favorites' ? 'text-accent border-b-2 border-accent' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}"
       >{$t('favorites.title')}</button>
     </div>
 
     <!-- Content -->
-    <div class="flex-1 overflow-y-auto p-2">
+    <div class="flex-1 overflow-y-auto px-2 py-2">
       {#if activeTab === 'pages'}
         <PageTree
           tree={pageStore.pageTree}
@@ -378,10 +378,10 @@
     </div>
 
     <!-- Footer -->
-    <div class="p-2 border-t border-gray-200 dark:border-gray-700">
+    <div class="px-2 py-2 border-t border-gray-200 dark:border-gray-800">
       <button
         onclick={onOpenSettings}
-        class="w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"
+        class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 transition-colors"
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -392,13 +392,13 @@
     </div>
   </aside>
 {:else}
-  <aside class="w-12 h-full bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col items-center py-3">
-    <button onclick={() => (collapsed = false)} class="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700" title={$t('sidebar.expand')}>
+  <aside class="w-12 h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col items-center py-3 shrink-0">
+    <button onclick={() => (collapsed = false)} class="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" title={$t('sidebar.expand')} aria-label={$t('sidebar.expand')}>
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
       </svg>
     </button>
-    <button onclick={() => handleNewPage(null)} class="mt-2 p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-accent" title={$t('sidebar.newPage')}>
+    <button onclick={() => handleNewPage(null)} class="mt-2 p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-accent transition-colors" title={$t('sidebar.newPage')} aria-label={$t('sidebar.newPage')}>
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
       </svg>

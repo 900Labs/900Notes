@@ -248,23 +248,23 @@
   }
 </script>
 
-<div class="flex-1 flex flex-col overflow-hidden">
+<div class="flex-1 flex flex-col overflow-hidden bg-white dark:bg-gray-950">
   <!-- Toolbar -->
   <EditorToolbar onAction={handleToolbarAction} />
 
   <!-- Page Actions Bar -->
-  <div class="flex items-center gap-2 px-12 py-1 max-w-3xl mx-auto w-full border-b border-gray-100 dark:border-gray-800">
+  <div class="flex items-center gap-2 px-12 py-1.5 max-w-3xl mx-auto w-full border-b border-gray-100 dark:border-gray-800/50">
     <button
       onclick={handleExportPdf}
       disabled={exporting}
-      class="text-xs px-2 py-1 rounded text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
+      class="text-xs px-2.5 py-1 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors"
       title={$t('pdf.exportPage')}
     >
       {#if exporting}{$t('pdf.exporting')}{:else}📄 {$t('pdf.exportPage')}{/if}
     </button>
     <button
       onclick={handleRecordAudio}
-      class="text-xs px-2 py-1 rounded text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+      class="text-xs px-2.5 py-1 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
       title={$t('audio.record')}
     >
       {#if recording}⏹ {$t('audio.recording')} {Math.floor(recordDuration)}s{:else}🎙 {$t('audio.record')}{/if}
@@ -274,7 +274,7 @@
         <button
           onclick={() => handleOcrAttachment(att.id)}
           disabled={ocrLoading === att.id}
-          class="text-xs px-2 py-1 rounded text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
+          class="text-xs px-2.5 py-1 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors"
           title={$t('ocr.extractText')}
         >
           {#if ocrLoading === att.id}{$t('ocr.extracting')}{:else}🔍 {$t('ocr.extractText')}{/if}
@@ -284,7 +284,7 @@
   </div>
 
   <!-- Page Header -->
-  <div class="px-12 pt-6 pb-2 max-w-3xl mx-auto w-full">
+  <div class="px-12 pt-8 pb-2 max-w-3xl mx-auto w-full">
     <div class="flex items-center gap-3">
       <input
         type="text"
@@ -301,7 +301,7 @@
         onblur={saveTitle}
         placeholder={$t('editor.titlePlaceholder')}
         aria-label="{$t('editor.titlePlaceholder')}"
-        class="flex-1 text-3xl font-bold bg-transparent focus:outline-none placeholder:text-gray-300 dark:placeholder:text-gray-600"
+        class="flex-1 text-3xl font-bold bg-transparent focus:outline-none placeholder:text-gray-300 dark:placeholder:text-gray-700 text-gray-900 dark:text-gray-100"
       />
     </div>
 
@@ -311,14 +311,14 @@
     </div>
 
     <!-- Properties -->
-    <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
-      <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{$t('properties.title')}</div>
+    <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800/50">
+      <div class="text-xs font-semibold text-gray-400 dark:text-gray-600 uppercase tracking-wide mb-2">{$t('properties.title')}</div>
       <PageProperties pageId={page.id} />
     </div>
   </div>
 
   <!-- Editor -->
-  <div class="flex-1 overflow-y-auto px-12 pb-12 max-w-3xl mx-auto w-full" onkeydown={handleKeydown} role="toolbar" aria-label="{$t('editor.titlePlaceholder')}" tabindex="0">
+  <div class="flex-1 overflow-y-auto px-12 pb-16 max-w-3xl mx-auto w-full text-gray-900 dark:text-gray-100" onkeydown={handleKeydown} role="toolbar" aria-label="{$t('editor.titlePlaceholder')}" tabindex="0">
     <div bind:this={editorElement} class="prose-container"></div>
   </div>
 </div>
