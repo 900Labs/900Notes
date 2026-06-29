@@ -7,8 +7,13 @@ use crate::AppState;
 pub fn start_sync(
     device_name: Option<String>,
     port: Option<u16>,
+    pairing_secret: String,
     state: State<'_, AppState>,
 ) -> Result<SyncStatus, String> {
+    if pairing_secret.trim().len() < 12 {
+        return Err("Sync pairing secret must be at least 12 characters".to_string());
+    }
+
     let device_id = uuid::Uuid::new_v4().to_string();
     let name = device_name.unwrap_or_else(|| {
         std::env::var("HOSTNAME")
@@ -22,7 +27,8 @@ pub fn start_sync(
         return Err("Sync already running".to_string());
     }
 
-    let mut service = crate::services::sync::SyncService::new(&device_id, &name, p);
+    let mut service =
+        crate::services::sync::SyncService::new(&device_id, &name, p, pairing_secret.trim());
     service.start(state.db.clone()).map_err(|e| e.to_string())?;
 
     let status = SyncStatus {

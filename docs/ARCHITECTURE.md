@@ -13,7 +13,7 @@
 │  │               │  │                 │ │
 │  │  ProseMirror  │  │  SQLite + FTS5  │ │
 │  │  TailwindCSS  │  │  Link Engine    │ │
-│  │  i18n (6 lang)│  │  Export/Import  │ │
+│  │ i18n (10 lang)│  │  Export/Import  │ │
 │  └───────────────┘  └─────────────────┘ │
 │         IPC via Tauri Commands           │
 └─────────────────────────────────────────┘
@@ -36,10 +36,14 @@
 - **links**: id (UUID), source_page_id, target_page_id, link_text, created_at
 - **pages_fts**: FTS5 virtual table over page titles and content
 - **settings**: key-value store for app preferences
+- **attachments**: BLOB storage for images, PDFs, and audio with a 25 MB per-file cap
+- **sync_state / sync_queue**: CRDT state and pending sync operations
+- **plugins**: Local plugin manifests discovered under the app data plugin root
 
 ### Triggers
 
 - `pages_fts_insert/update/delete`: Keep the FTS5 index in sync with the pages table automatically.
+- Startup migration code repairs older contentless FTS tables and repopulates the index so snippets can be generated reliably.
 
 ## Link Engine
 
@@ -63,17 +67,17 @@ Following the 900Word pattern:
 
 ## Offline Model
 
-- No network calls are made by the application
+- No network calls are made by default
 - No telemetry is collected
 - All data stays in `{APP_DATA_DIR}/900notes.db`
-- Export/import is the only way data leaves the machine
+- Export/import and explicitly enabled LAN sync are the only ways data leaves the machine
 - The app works fully offline after the first download
 
 ## i18n Architecture
 
 - Translation files are in `src/i18n/index.ts`
-- 6 languages: English, French, Spanish, Swahili, Hindi, Arabic
-- Arabic uses RTL layout (document direction set dynamically)
+- 10 languages: English, French, Spanish, Swahili, Hindi, Arabic, Portuguese, Bengali, Urdu, Amharic
+- Arabic and Urdu use RTL layout (document direction set dynamically)
 - The `t` store is derived from the `locale` store, providing reactive translations
 
 ## Encryption
@@ -91,27 +95,33 @@ Following the 900Word pattern:
 - **mDNS** discovery for peers on the local network
 - **TCP** server for peer-to-peer sync
 - Sync is opt-in and only activates when the user explicitly starts it
+- Starting sync requires a 12+ character pairing secret
+- Sync handshakes are encrypted with AES-256-GCM using the pairing secret
 - Sync handshake messages are capped at 100MB to prevent OOM DoS
-- **Residual risk**: Sync traffic is not encrypted (future: TLS or Noise Protocol)
+- **Residual risk**: mDNS still advertises that 900Notes sync is running on the LAN. Pairing-secret strength is user controlled.
 
 ## Content Security Policy
 
-- CSP is configured in `tauri.conf.json`:
+- Desktop CSP is configured in `tauri.conf.json`:
   - `default-src 'self'`
   - `script-src 'self' 'unsafe-eval' 'unsafe-inline'` (needed for plugin loading via `new Function()` and Svelte's injected styles)
   - `style-src 'self' 'unsafe-inline'`
   - `img-src 'self' data: blob:`
   - `font-src 'self' data:`
   - `connect-src 'self' ipc: http://ipc.localhost`
+- Mobile CSP is configured in `tauri.mobile.conf.json` without `unsafe-eval` because the mobile companion does not load plugins.
 
 ## Database Integrity
 
 - Multi-step DB operations (secure delete, empty trash, workspace import) are wrapped in BEGIN/COMMIT/ROLLBACK transactions for atomicity
 - Page revisions are pruned to the last 50 per page on each update
 - WAL checkpoint is performed before encryption operations to flush all data
+- Page moves reject self-parent and descendant-parent cycles before updating `pages.parent_id`
+- Search snippets are escaped before the `<mark>` highlight tags are restored
+- Attachment writes are rejected if the BLOB is larger than 25 MB
 
 ## Testing
 
-- 10 unit tests covering DB CRUD operations (create, read, update, soft delete, restore, tags, links, secure delete, revision pruning, settings)
+- 17 Rust unit tests covering DB CRUD operations, search snippets, page move cycles, attachment limits, plugin path validation, encrypted sync framing, and PDF export smoke coverage
 - Tests use in-memory SQLite (`Connection::open_in_memory()`)
-- CI includes `cargo audit` for dependency vulnerability scanning
+- CI includes `cargo audit --file src-tauri/Cargo.lock` for Rust dependency vulnerability scanning

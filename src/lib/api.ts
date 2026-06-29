@@ -323,8 +323,12 @@ export const deleteAudioNote = (id: string): Promise<void> =>
   invoke('delete_audio_note', { id })
 
 // ── Sync ──
-export const startSync = (deviceName?: string, port?: number): Promise<SyncStatus> =>
-  invoke('start_sync', { deviceName, port })
+export const startSync = (
+  deviceName: string | undefined,
+  port: number | undefined,
+  pairingSecret: string,
+): Promise<SyncStatus> =>
+  invoke('start_sync', { deviceName, port, pairingSecret })
 
 export const stopSync = (): Promise<void> =>
   invoke('stop_sync')
@@ -417,11 +421,11 @@ export const setPluginEnabled = (id: string, enabled: boolean): Promise<void> =>
 export const uninstallPlugin = (id: string): Promise<void> =>
   invoke('uninstall_plugin', { id })
 
-export const scanPluginsDir = (appDataDir: string): Promise<Plugin[]> =>
-  invoke('scan_plugins_dir', { appDataDir })
+export const scanPluginsDir = (): Promise<Plugin[]> =>
+  invoke('scan_plugins_dir')
 
-export const readPluginFile = (appDataDir: string, pluginId: string, filePath: string): Promise<string> =>
-  invoke('read_plugin_file', { appDataDir, pluginId, filePath })
+export const readPluginFile = (pluginId: string, filePath: string): Promise<string> =>
+  invoke('read_plugin_file', { pluginId, filePath })
 
 // ── Automation API ──
 export const apiCreatePage = (title: string, content?: string, parentId?: string): Promise<Page> =>

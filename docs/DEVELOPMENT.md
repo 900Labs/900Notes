@@ -47,7 +47,7 @@ The app opens at `http://localhost:1420` in the Tauri webview. Hot-reload is act
 │   ├── stores/                   # Svelte 5 Runes state stores
 │   │   └── app.svelte.ts         # PageStore, TagStore, BacklinkStore, SettingsStore
 │   ├── i18n/                     # Translation files
-│   │   └── index.ts              # 6 languages, locale store, t() derived store
+│   │   └── index.ts              # 10 languages, locale store, t() derived store
 │   ├── lib/                      # Frontend libraries
 │   │   ├── api.ts                # Tauri IPC wrapper (typed)
 │   │   ├── types.ts              # TypeScript interfaces matching Rust models
@@ -158,7 +158,7 @@ The app opens at `http://localhost:1420` in the Tauri webview. Hot-reload is act
 4. **Slash menu**: Add item in `src/components/editor/SlashMenu.svelte`.
 5. **CSS**: Add styles in `src/app.css` under `.ProseMirror` section.
 6. **Markdown conversion**: Add rendering in `src-tauri/src/services/markdown.rs` `render_node()` and `markdown_to_prosemirror()`.
-7. **Translation keys**: Add labels for the block type in all 6 languages in `src/i18n/index.ts`.
+7. **Translation keys**: Add labels for the block type in all 10 languages in `src/i18n/index.ts`.
 
 ## Adding a New Language
 

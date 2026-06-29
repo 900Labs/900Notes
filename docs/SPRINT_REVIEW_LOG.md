@@ -2,6 +2,8 @@
 
 This document tracks the build → review cycle for each post-MVP sprint. No sprint proceeds to the next until the review passes.
 
+> Historical note: this file preserves per-sprint implementation history. Some entries mention implementation details that were later replaced during audit remediation. For current architecture, security, privacy, plugin, and handoff state, use `ARCHITECTURE.md`, `THREAT_MODEL.md`, `PRIVACY_MODEL.md`, `PLUGINS.md`, and `MAINTAINER_HANDOFF.md`.
+
 ---
 
 ## Sprint 1: Navigation & Structure

@@ -64,9 +64,11 @@ All data is stored in a single SQLite file at `{APP_DATA_DIR}/900notes.db`.
 |--------|------|-------------|
 | `page_id` | UNINDEXED | Foreign reference to pages.id |
 | `title` | indexed | Page title for full-text search |
-| `content` | indexed | Plain-text extraction of page content |
+| `content` | indexed | Stored page content text used for full-text search snippets |
 
 **Tokenizer**: `unicode61` (Unicode-aware tokenization, supports non-ASCII languages).
+
+Older builds created `pages_fts` as a contentless FTS table. Startup migration code detects that shape, recreates the table with stored content, and repopulates it from `pages` so search snippets are available.
 
 ### `settings`
 
@@ -163,6 +165,8 @@ All data is stored in a single SQLite file at `{APP_DATA_DIR}/900notes.db`.
 
 **Index**: `idx_attachments_page_id` on `page_id`.
 
+**Limit**: `create_attachment` rejects BLOBs larger than 25 MB. The frontend image/audio insertion paths also check the same limit before reading a file into memory.
+
 ## Triggers
 
 ### `pages_fts_insert`
@@ -196,9 +200,19 @@ The `extract_wiki_links()` function scans raw JSON content for `[[` and `]]` del
 
 Link text is matched against page titles case-insensitively. If no match is found, the link is silently dropped (the `[[text]]` remains in the content but no link row is created). When a page is renamed, links are not automatically rebuilt — run `rebuild_links` to update.
 
+## Page Hierarchy Validation
+
+`Database::move_page()` validates the full requested parent chain before updating `pages.parent_id`.
+
+- Moving a page under itself is rejected.
+- Moving a page under one of its descendants is rejected.
+- Moving a page under a missing or deleted parent is rejected.
+
+This prevents cycles that would hide pages from tree queries or recurse indefinitely in future tree code.
+
 ## Migrations
 
-Migrations are run on startup in `Database::open()` via `run_migrations()`. The method uses `CREATE TABLE IF NOT EXISTS` and `CREATE INDEX IF NOT EXISTS` for idempotency. No separate migration files are needed for the MVP — all schema is in a single `execute_batch` call.
+Migrations are run on startup in `Database::open()` via `run_migrations()`. The method uses `CREATE TABLE IF NOT EXISTS` and `CREATE INDEX IF NOT EXISTS` for idempotency, plus targeted repair logic for schema shapes that cannot be changed by `IF NOT EXISTS` alone, such as the older contentless FTS table.
 
 ### Adding Migrations (Post-MVP)
 

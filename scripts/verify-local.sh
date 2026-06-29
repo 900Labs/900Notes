@@ -35,7 +35,7 @@ echo "  ✓ Build passed"
 echo ""
 
 echo "[7/7] Cargo audit..."
-cargo audit --manifest-path src-tauri/Cargo.toml
+cargo audit --file src-tauri/Cargo.lock
 echo "  ✓ Audit passed"
 echo ""
 

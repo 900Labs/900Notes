@@ -157,4 +157,4 @@ ProseMirror editor styles are in `src/app.css` under the `.ProseMirror` selector
 4. Add a slash menu item in `src/components/editor/SlashMenu.svelte`
 5. Add CSS styles in `src/app.css`
 6. Add Markdown conversion in `src-tauri/src/services/markdown.rs`
-7. Add translation keys in all 6 languages in `src/i18n/index.ts`
+7. Add translation keys in all 10 languages in `src/i18n/index.ts`

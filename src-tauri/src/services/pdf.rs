@@ -1,331 +1,462 @@
-use printpdf::*;
 use serde_json::Value;
 
 use crate::models::Page;
 
-const REGULAR_FONT: &[u8] = include_bytes!("../../assets/fonts/Roboto-Regular.ttf");
-const BOLD_FONT: &[u8] = include_bytes!("../../assets/fonts/Roboto-Bold.ttf");
+const PAGE_WIDTH_PT: f32 = 595.28;
+const PAGE_HEIGHT_PT: f32 = 841.89;
+const MARGIN_PT: f32 = 56.0;
 
-const PAGE_WIDTH: Mm = Mm(210.0);
-const PAGE_HEIGHT: Mm = Mm(297.0);
-const MARGIN: Mm = Mm(20.0);
-
-struct PdfRenderer {
-    ops: Vec<Op>,
-    font_regular: FontId,
-    font_bold: FontId,
-    y_pos: f32,
+#[derive(Clone, Copy)]
+enum PdfTextStyle {
+    Title,
+    Heading(u64),
+    Body,
+    Code,
+    Quote,
 }
 
-impl PdfRenderer {
-    fn new(font_regular: FontId, font_bold: FontId) -> Self {
+#[derive(Clone)]
+struct PdfLine {
+    text: String,
+    style: PdfTextStyle,
+}
+
+impl PdfLine {
+    fn new(text: impl Into<String>, style: PdfTextStyle) -> Self {
         Self {
-            ops: Vec::new(),
-            font_regular,
-            font_bold,
-            y_pos: PAGE_HEIGHT.0 - MARGIN.0,
+            text: text.into(),
+            style,
         }
     }
+}
 
-    fn write_line(&mut self, text: &str, bold: bool, size: f32) {
-        self.y_pos -= size * 1.4;
-        let pos = Point {
-            x: Pt(MARGIN.0 * 2.834_645_7),
-            y: Pt(self.y_pos * 2.834_645_7),
-        };
-        let font_handle = PdfFontHandle::External(if bold {
-            self.font_bold.clone()
-        } else {
-            self.font_regular.clone()
-        });
-        self.ops.push(Op::SetFont {
-            font: font_handle,
-            size: Pt(size),
-        });
-        self.ops.push(Op::SetTextCursor { pos });
-        self.ops.push(Op::ShowText {
-            items: vec![TextItem::Text(text.to_string())],
-        });
-        self.ops.push(Op::AddLineBreak);
+fn font_size(style: PdfTextStyle) -> f32 {
+    match style {
+        PdfTextStyle::Title => 22.0,
+        PdfTextStyle::Heading(1) => 18.0,
+        PdfTextStyle::Heading(2) => 15.0,
+        PdfTextStyle::Heading(_) => 13.0,
+        PdfTextStyle::Body | PdfTextStyle::Quote => 11.5,
+        PdfTextStyle::Code => 10.0,
     }
+}
 
-    fn write_title(&mut self, title: &str) {
-        self.write_line(title, true, 24.0);
-        self.y_pos -= 5.0;
+fn line_height(style: PdfTextStyle) -> f32 {
+    font_size(style) * 1.45
+}
+
+fn font_name(style: PdfTextStyle) -> &'static str {
+    match style {
+        PdfTextStyle::Title | PdfTextStyle::Heading(_) => "F2",
+        PdfTextStyle::Body | PdfTextStyle::Code | PdfTextStyle::Quote => "F1",
     }
+}
 
-    fn write_heading(&mut self, level: usize, text: &str) {
-        self.y_pos -= 5.0;
-        let size = match level {
-            1 => 20.0,
-            2 => 16.0,
-            _ => 14.0,
-        };
-        self.write_line(text, true, size);
-        self.y_pos -= 3.0;
+fn x_pos(style: PdfTextStyle) -> f32 {
+    match style {
+        PdfTextStyle::Quote => MARGIN_PT + 14.0,
+        PdfTextStyle::Code => MARGIN_PT + 10.0,
+        _ => MARGIN_PT,
     }
+}
 
-    fn write_paragraph(&mut self, text: &str) {
-        for line in wrap_text(text, 80) {
-            self.write_line(&line, false, 12.0);
-        }
-    }
-
-    fn write_code_block(&mut self, code: &str) {
-        self.y_pos -= 3.0;
-        for line in code.lines() {
-            self.write_line(line, false, 10.0);
-        }
-        self.y_pos -= 3.0;
-    }
-
-    fn write_divider(&mut self) {
-        self.y_pos -= 5.0;
-        self.write_line("────────────────────────────────────────", false, 12.0);
-        self.y_pos -= 3.0;
-    }
-
-    fn write_list_item(&mut self, marker: &str, text: &str) {
-        self.write_line(&format!("{} {}", marker, text), false, 12.0);
-    }
-
-    fn write_empty(&mut self) {
-        self.y_pos -= 12.0 * 1.4;
+fn max_chars(style: PdfTextStyle) -> usize {
+    match style {
+        PdfTextStyle::Title => 48,
+        PdfTextStyle::Heading(1) => 58,
+        PdfTextStyle::Heading(_) => 68,
+        PdfTextStyle::Code => 88,
+        PdfTextStyle::Quote => 76,
+        PdfTextStyle::Body => 82,
     }
 }
 
 fn wrap_text(text: &str, max_chars: usize) -> Vec<String> {
     let mut lines = Vec::new();
     for paragraph in text.split('\n') {
-        if paragraph.is_empty() {
+        if paragraph.trim().is_empty() {
             lines.push(String::new());
             continue;
         }
-        let words: Vec<&str> = paragraph.split_whitespace().collect();
+
         let mut current = String::new();
-        for word in words {
+        for word in paragraph.split_whitespace() {
             if current.is_empty() {
                 current = word.to_string();
-            } else if current.len() + 1 + word.len() <= max_chars {
+            } else if current.chars().count() + 1 + word.chars().count() <= max_chars {
                 current.push(' ');
                 current.push_str(word);
             } else {
                 lines.push(current);
                 current = word.to_string();
             }
+
+            while current.chars().count() > max_chars {
+                let split_at = current
+                    .char_indices()
+                    .nth(max_chars)
+                    .map(|(idx, _)| idx)
+                    .unwrap_or(current.len());
+                let rest = current.split_off(split_at);
+                lines.push(current);
+                current = rest;
+            }
         }
+
         if !current.is_empty() {
             lines.push(current);
         }
     }
+
     if lines.is_empty() {
         lines.push(String::new());
     }
+
     lines
 }
 
+fn push_wrapped(lines: &mut Vec<PdfLine>, text: &str, style: PdfTextStyle) {
+    for line in wrap_text(text, max_chars(style)) {
+        lines.push(PdfLine::new(line, style));
+    }
+}
+
 fn extract_text(node: &Value) -> String {
-    let mut text = String::new();
-    if let Some(content) = node.get("content").and_then(|c| c.as_array()) {
-        for child in content {
-            let child_type = child.get("type").and_then(|t| t.as_str()).unwrap_or("");
-            if child_type == "text" {
-                if let Some(t) = child.get("text").and_then(|t| t.as_str()) {
-                    text.push_str(t);
+    let node_type = node.get("type").and_then(|t| t.as_str()).unwrap_or("");
+    match node_type {
+        "text" => node
+            .get("text")
+            .and_then(|t| t.as_str())
+            .unwrap_or("")
+            .to_string(),
+        "wiki_link" => node
+            .get("attrs")
+            .and_then(|a| a.get("title"))
+            .and_then(|t| t.as_str())
+            .unwrap_or("")
+            .to_string(),
+        "hard_break" => "\n".to_string(),
+        "math_inline" => node
+            .get("attrs")
+            .and_then(|a| a.get("latex"))
+            .and_then(|t| t.as_str())
+            .unwrap_or("")
+            .to_string(),
+        _ => {
+            let mut text = String::new();
+            if let Some(content) = node.get("content").and_then(|c| c.as_array()) {
+                for child in content {
+                    text.push_str(&extract_text(child));
                 }
-            } else if child_type == "wiki_link" {
-                if let Some(title) = child
-                    .get("attrs")
-                    .and_then(|a| a.get("title"))
-                    .and_then(|t| t.as_str())
-                {
-                    text.push_str(title);
-                }
-            } else if child_type == "hard_break" {
-                text.push('\n');
-            } else if child_type == "math_inline" {
-                if let Some(latex) = child
-                    .get("attrs")
-                    .and_then(|a| a.get("latex"))
-                    .and_then(|t| t.as_str())
-                {
-                    text.push_str(latex);
+            }
+            text
+        }
+    }
+}
+
+fn push_node_lines(node: &Value, lines: &mut Vec<PdfLine>) {
+    let node_type = node.get("type").and_then(|t| t.as_str()).unwrap_or("");
+    match node_type {
+        "heading" => {
+            let level = node
+                .get("attrs")
+                .and_then(|a| a.get("level"))
+                .and_then(|l| l.as_u64())
+                .unwrap_or(1);
+            push_wrapped(lines, &extract_text(node), PdfTextStyle::Heading(level));
+        }
+        "paragraph" => {
+            let text = extract_text(node);
+            push_wrapped(lines, &text, PdfTextStyle::Body);
+        }
+        "bullet_list" => {
+            if let Some(items) = node.get("content").and_then(|c| c.as_array()) {
+                for item in items {
+                    push_wrapped(
+                        lines,
+                        &format!("- {}", extract_text(item)),
+                        PdfTextStyle::Body,
+                    );
                 }
             }
         }
+        "ordered_list" => {
+            if let Some(items) = node.get("content").and_then(|c| c.as_array()) {
+                for (index, item) in items.iter().enumerate() {
+                    push_wrapped(
+                        lines,
+                        &format!("{}. {}", index + 1, extract_text(item)),
+                        PdfTextStyle::Body,
+                    );
+                }
+            }
+        }
+        "todo_item" => {
+            let checked = node
+                .get("attrs")
+                .and_then(|a| a.get("checked"))
+                .and_then(|c| c.as_bool())
+                .unwrap_or(false);
+            let marker = if checked { "[x]" } else { "[ ]" };
+            push_wrapped(
+                lines,
+                &format!("{marker} {}", extract_text(node)),
+                PdfTextStyle::Body,
+            );
+        }
+        "code_block" => {
+            for line in extract_text(node).lines() {
+                push_wrapped(lines, line, PdfTextStyle::Code);
+            }
+        }
+        "blockquote" => {
+            push_wrapped(lines, &extract_text(node), PdfTextStyle::Quote);
+        }
+        "divider" => {
+            lines.push(PdfLine::new(
+                "----------------------------------------",
+                PdfTextStyle::Body,
+            ));
+        }
+        "math_block" => {
+            let latex = node
+                .get("attrs")
+                .and_then(|a| a.get("latex"))
+                .and_then(|t| t.as_str())
+                .unwrap_or("");
+            push_wrapped(lines, latex, PdfTextStyle::Code);
+        }
+        "mermaid_block" => {
+            push_wrapped(
+                lines,
+                &format!("[Mermaid diagram]\n{}", extract_text(node)),
+                PdfTextStyle::Code,
+            );
+        }
+        "image" => {
+            let alt = node
+                .get("attrs")
+                .and_then(|a| a.get("alt"))
+                .and_then(|t| t.as_str())
+                .unwrap_or("");
+            push_wrapped(lines, &format!("[Image: {alt}]"), PdfTextStyle::Body);
+        }
+        _ => {
+            let text = extract_text(node);
+            if !text.is_empty() {
+                push_wrapped(lines, &text, PdfTextStyle::Body);
+            }
+        }
     }
-    text
 }
 
-fn render_content(content: &str, font_regular: FontId, font_bold: FontId) -> Vec<Op> {
-    let doc: Value = match serde_json::from_str(content) {
-        Ok(v) => v,
-        Err(_) => return Vec::new(),
-    };
+fn render_page_lines(page: &Page) -> Vec<PdfLine> {
+    let mut lines = Vec::new();
+    push_wrapped(&mut lines, &page.title, PdfTextStyle::Title);
+    lines.push(PdfLine::new(String::new(), PdfTextStyle::Body));
 
-    let mut r = PdfRenderer::new(font_regular, font_bold);
+    let doc: Value = match serde_json::from_str(&page.content) {
+        Ok(value) => value,
+        Err(_) => {
+            push_wrapped(&mut lines, &page.content, PdfTextStyle::Body);
+            return lines;
+        }
+    };
 
     if let Some(nodes) = doc.get("content").and_then(|c| c.as_array()) {
         for node in nodes {
-            let node_type = node.get("type").and_then(|t| t.as_str()).unwrap_or("");
-            match node_type {
-                "heading" => {
-                    let level = node
-                        .get("attrs")
-                        .and_then(|a| a.get("level"))
-                        .and_then(|l| l.as_u64())
-                        .unwrap_or(1) as usize;
-                    let text = extract_text(node);
-                    r.write_heading(level, &text);
-                }
-                "paragraph" => {
-                    let text = extract_text(node);
-                    if text.is_empty() {
-                        r.write_empty();
-                    } else {
-                        r.write_paragraph(&text);
-                    }
-                }
-                "bullet_list" => {
-                    if let Some(items) = node.get("content").and_then(|c| c.as_array()) {
-                        for item in items {
-                            let text = extract_text(item);
-                            r.write_list_item("•", &text);
-                        }
-                    }
-                }
-                "ordered_list" => {
-                    if let Some(items) = node.get("content").and_then(|c| c.as_array()) {
-                        for (i, item) in items.iter().enumerate() {
-                            let text = extract_text(item);
-                            r.write_list_item(&format!("{}.", i + 1), &text);
-                        }
-                    }
-                }
-                "todo_item" => {
-                    let checked = node
-                        .get("attrs")
-                        .and_then(|a| a.get("checked"))
-                        .and_then(|c| c.as_bool())
-                        .unwrap_or(false);
-                    let text = extract_text(node);
-                    r.write_list_item(if checked { "[x]" } else { "[ ]" }, &text);
-                }
-                "code_block" => {
-                    let code = extract_text(node);
-                    r.write_code_block(&code);
-                }
-                "blockquote" => {
-                    let text = extract_text(node);
-                    for line in wrap_text(&text, 76) {
-                        r.write_line(&format!("  | {}", line), false, 12.0);
-                    }
-                }
-                "divider" => {
-                    r.write_divider();
-                }
-                "math_block" => {
-                    let latex = node
-                        .get("attrs")
-                        .and_then(|a| a.get("latex"))
-                        .and_then(|t| t.as_str())
-                        .unwrap_or("");
-                    r.write_code_block(latex);
-                }
-                "mermaid_block" => {
-                    let code = extract_text(node);
-                    r.write_code_block(&format!("[Mermaid Diagram]\n{}", code));
-                }
-                "image" => {
-                    let alt = node
-                        .get("attrs")
-                        .and_then(|a| a.get("alt"))
-                        .and_then(|t| t.as_str())
-                        .unwrap_or("");
-                    r.write_paragraph(&format!("[Image: {}]", alt));
-                }
-                _ => {
-                    let text = extract_text(node);
-                    if !text.is_empty() {
-                        r.write_paragraph(&text);
-                    }
-                }
-            }
+            push_node_lines(node, &mut lines);
         }
     }
 
-    r.ops
+    lines
+}
+
+fn paginate_section(lines: &[PdfLine]) -> Vec<Vec<PdfLine>> {
+    let mut pages = Vec::new();
+    let mut current = Vec::new();
+    let mut y = PAGE_HEIGHT_PT - MARGIN_PT;
+
+    for line in lines {
+        let needed = line_height(line.style);
+        if y - needed < MARGIN_PT && !current.is_empty() {
+            pages.push(current);
+            current = Vec::new();
+            y = PAGE_HEIGHT_PT - MARGIN_PT;
+        }
+        y -= needed;
+        current.push(line.clone());
+    }
+
+    if !current.is_empty() {
+        pages.push(current);
+    }
+
+    pages
+}
+
+fn pdf_text_hex(text: &str) -> String {
+    let mut out = String::from("<FEFF");
+    for unit in text.encode_utf16() {
+        out.push_str(&format!("{unit:04X}"));
+    }
+    out.push('>');
+    out
+}
+
+fn content_stream(lines: &[PdfLine]) -> Vec<u8> {
+    let mut stream = String::from("BT\n");
+    let mut y = PAGE_HEIGHT_PT - MARGIN_PT;
+
+    for line in lines {
+        let size = font_size(line.style);
+        y -= line_height(line.style);
+        stream.push_str(&format!(
+            "/{font} {size:.2} Tf\n",
+            font = font_name(line.style)
+        ));
+        stream.push_str(&format!(
+            "1 0 0 1 {x:.2} {y:.2} Tm\n",
+            x = x_pos(line.style)
+        ));
+        stream.push_str(&format!("{} Tj\n", pdf_text_hex(&line.text)));
+    }
+
+    stream.push_str("ET\n");
+    stream.into_bytes()
+}
+
+fn build_pdf(sections: Vec<Vec<PdfLine>>) -> Vec<u8> {
+    let mut page_lines = Vec::new();
+    for section in sections {
+        page_lines.extend(paginate_section(&section));
+    }
+    if page_lines.is_empty() {
+        page_lines.push(Vec::new());
+    }
+
+    let page_count = page_lines.len();
+    let page_object_ids: Vec<usize> = (0..page_count).map(|i| 5 + i * 2).collect();
+    let content_object_ids: Vec<usize> = (0..page_count).map(|i| 6 + i * 2).collect();
+    let object_count = 4 + page_count * 2;
+
+    let mut objects: Vec<(usize, Vec<u8>)> = Vec::new();
+    objects.push((1, b"<< /Type /Catalog /Pages 2 0 R >>".to_vec()));
+    objects.push((
+        2,
+        format!(
+            "<< /Type /Pages /Kids [{}] /Count {} >>",
+            page_object_ids
+                .iter()
+                .map(|id| format!("{id} 0 R"))
+                .collect::<Vec<_>>()
+                .join(" "),
+            page_count
+        )
+        .into_bytes(),
+    ));
+    objects.push((
+        3,
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".to_vec(),
+    ));
+    objects.push((
+        4,
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>".to_vec(),
+    ));
+
+    for (index, lines) in page_lines.iter().enumerate() {
+        let page_object_id = page_object_ids[index];
+        let content_object_id = content_object_ids[index];
+        objects.push((
+            page_object_id,
+            format!(
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {width:.2} {height:.2}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents {content_object_id} 0 R >>",
+                width = PAGE_WIDTH_PT,
+                height = PAGE_HEIGHT_PT,
+            )
+            .into_bytes(),
+        ));
+
+        let stream = content_stream(lines);
+        let mut object = format!("<< /Length {} >>\nstream\n", stream.len()).into_bytes();
+        object.extend_from_slice(&stream);
+        object.extend_from_slice(b"endstream");
+        objects.push((content_object_id, object));
+    }
+
+    objects.sort_by_key(|(id, _)| *id);
+
+    let mut output = b"%PDF-1.4\n".to_vec();
+    let mut offsets = vec![0usize; object_count + 1];
+    for (id, body) in objects {
+        offsets[id] = output.len();
+        output.extend_from_slice(format!("{id} 0 obj\n").as_bytes());
+        output.extend_from_slice(&body);
+        output.extend_from_slice(b"\nendobj\n");
+    }
+
+    let xref_offset = output.len();
+    output.extend_from_slice(format!("xref\n0 {}\n", object_count + 1).as_bytes());
+    output.extend_from_slice(b"0000000000 65535 f \n");
+    for offset in offsets.iter().skip(1) {
+        output.extend_from_slice(format!("{offset:010} 00000 n \n").as_bytes());
+    }
+    output.extend_from_slice(
+        format!(
+            "trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{}\n%%EOF\n",
+            object_count + 1,
+            xref_offset
+        )
+        .as_bytes(),
+    );
+
+    output
 }
 
 pub fn export_page_pdf(page: &Page) -> Result<Vec<u8>, String> {
-    let mut doc = PdfDocument::new(&format!("900Notes - {}", page.title));
-
-    let mut font_warnings = Vec::new();
-    let regular_font = ParsedFont::from_bytes(REGULAR_FONT, 0, &mut font_warnings)
-        .ok_or_else(|| "failed to parse regular font".to_string())?;
-    let bold_font = ParsedFont::from_bytes(BOLD_FONT, 0, &mut font_warnings)
-        .ok_or_else(|| "failed to parse bold font".to_string())?;
-
-    let font_regular = doc.add_font(&regular_font);
-    let font_bold = doc.add_font(&bold_font);
-
-    let mut title_r = PdfRenderer::new(font_regular.clone(), font_bold.clone());
-    title_r.write_title(&page.title);
-
-    let content_ops = render_content(&page.content, font_regular, font_bold);
-    let mut all_ops = title_r.ops;
-    all_ops.extend(content_ops);
-
-    let page = PdfPage::new(PAGE_WIDTH, PAGE_HEIGHT, all_ops);
-    let save_options = PdfSaveOptions::default();
-
-    let mut save_warnings = Vec::new();
-    let pdf_bytes = doc
-        .with_pages(vec![page])
-        .save(&save_options, &mut save_warnings);
-
-    Ok(pdf_bytes)
+    Ok(build_pdf(vec![render_page_lines(page)]))
 }
 
 pub fn export_pages_pdf(pages: &[Page]) -> Result<Vec<u8>, String> {
-    let mut doc = PdfDocument::new("900Notes - Workspace Export");
+    let sections: Vec<Vec<PdfLine>> = pages
+        .iter()
+        .filter(|page| page.deleted_at.is_none())
+        .map(render_page_lines)
+        .collect();
+    Ok(build_pdf(sections))
+}
 
-    let mut font_warnings = Vec::new();
-    let regular_font = ParsedFont::from_bytes(REGULAR_FONT, 0, &mut font_warnings)
-        .ok_or_else(|| "failed to parse regular font".to_string())?;
-    let bold_font = ParsedFont::from_bytes(BOLD_FONT, 0, &mut font_warnings)
-        .ok_or_else(|| "failed to parse bold font".to_string())?;
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    let font_regular = doc.add_font(&regular_font);
-    let font_bold = doc.add_font(&bold_font);
-
-    let mut pdf_pages = Vec::new();
-
-    for page in pages {
-        if page.deleted_at.is_some() {
-            continue;
+    fn test_page(title: &str, content: &str) -> Page {
+        Page {
+            id: "page-1".to_string(),
+            parent_id: None,
+            title: title.to_string(),
+            content: content.to_string(),
+            icon: None,
+            cover_color: None,
+            created_at: "2026-01-01T00:00:00Z".to_string(),
+            updated_at: "2026-01-01T00:00:00Z".to_string(),
+            deleted_at: None,
+            pinned: false,
+            sort_order: 0,
         }
-
-        let mut title_r = PdfRenderer::new(font_regular.clone(), font_bold.clone());
-        title_r.write_title(&page.title);
-
-        let content_ops = render_content(&page.content, font_regular.clone(), font_bold.clone());
-        let mut all_ops = title_r.ops;
-        all_ops.extend(content_ops);
-
-        pdf_pages.push(PdfPage::new(PAGE_WIDTH, PAGE_HEIGHT, all_ops));
     }
 
-    if pdf_pages.is_empty() {
-        pdf_pages.push(PdfPage::new(PAGE_WIDTH, PAGE_HEIGHT, vec![]));
+    #[test]
+    fn exports_valid_pdf_header_and_catalog() {
+        let page = test_page(
+            "PDF Test",
+            r#"{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Hello PDF"}]}]}"#,
+        );
+
+        let pdf = export_page_pdf(&page).unwrap();
+
+        assert!(pdf.starts_with(b"%PDF-1.4"));
+        assert!(String::from_utf8_lossy(&pdf).contains("/Type /Catalog"));
+        assert!(String::from_utf8_lossy(&pdf).contains("/Helvetica"));
     }
-
-    let save_options = PdfSaveOptions::default();
-
-    let mut save_warnings = Vec::new();
-    let pdf_bytes = doc
-        .with_pages(pdf_pages)
-        .save(&save_options, &mut save_warnings);
-
-    Ok(pdf_bytes)
 }

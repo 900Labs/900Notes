@@ -12,6 +12,7 @@ The mobile companion provides a lightweight, read-only viewer for your 900Notes 
 - **Search**: Filter pages by title
 - **Reader view**: Rendered view of page content (headings, paragraphs, lists, code blocks, blockquotes, images, todo items)
 - **No editing**: The mobile app is intentionally read-only to keep the bundle small and the UI simple
+- **Safe rendering**: Note content is parsed into typed reader blocks and rendered through Svelte text bindings. The mobile app does not use raw `{@html}` for stored note content.
 
 ## Development
 
@@ -33,6 +34,7 @@ npm run tauri:mobile:build
 - **Tauri config**: `src-tauri/tauri.mobile.conf.json` (mobile viewport, separate identifier)
 - **Shared backend**: Same Tauri commands and SQLite database as desktop
 - **Shared stores**: Uses the same Svelte stores (`pageStore`, `settingsStore`) and i18n
+- **CSP**: Mobile uses a restrictive CSP without `unsafe-eval`; it does not load desktop plugins.
 
 ## Future Work
 

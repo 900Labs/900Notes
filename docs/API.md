@@ -877,9 +877,9 @@ Deletes an audio note record (does not delete the associated attachment).
 
 #### `start_sync`
 Starts local network sync — mDNS discovery + TCP server.
-- **Args**: `deviceName?: string`, `port?: number` (default 9876)
+- **Args**: `deviceName?: string`, `port?: number` (default 9876), `pairingSecret: string` (minimum 12 characters)
 - **Returns**: `SyncStatus` (`enabled`, `deviceId`, `deviceName`, `port`, `peers`, `lastSync`)
-- **Details**: Registers `_900notes._tcp.local.` mDNS service, starts TCP listener, begins browsing for peers
+- **Details**: Registers `_900notes._tcp.local.` mDNS service, starts TCP listener, begins browsing for peers, and encrypts sync handshakes with AES-256-GCM using the pairing secret. Peers must use the same pairing secret.
 
 #### `stop_sync`
 Stops all sync activity — shuts down mDNS daemon and TCP server.

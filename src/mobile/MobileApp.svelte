@@ -14,6 +14,13 @@
   let showSearch = $state(false)
   let view = $state<'list' | 'reader'>('list')
 
+  type ReaderBlock = {
+    type: 'heading' | 'paragraph' | 'bullet' | 'ordered' | 'todo' | 'code' | 'quote' | 'image'
+    level?: number
+    text: string
+    checked?: boolean
+  }
+
   onMount(async () => {
     await settingsStore.loadSettings()
     await pageStore.loadPageTree()
@@ -54,49 +61,60 @@
     return result
   }
 
-  function renderContent(content: string): string {
+  function renderContent(content: string): ReaderBlock[] {
     try {
       const doc = JSON.parse(content)
-      return docToHtml(doc)
+      return docToBlocks(doc)
     } catch {
-      return content
+      return [{ type: 'paragraph', text: content }]
     }
   }
 
-  function docToHtml(doc: any): string {
-    if (!doc.content) return ''
-    return doc.content.map((node: any) => nodeToHtml(node)).join('')
+  function docToBlocks(doc: any): ReaderBlock[] {
+    if (!doc.content) return []
+    return doc.content.flatMap((node: any, index: number) => nodeToBlocks(node, index))
   }
 
-  function nodeToHtml(node: any): string {
+  function inlineText(node: any): string {
+    return (node.content || [])
+      .map((child: any) => {
+        if (child.type === 'text') return child.text || ''
+        if (child.type === 'hard_break') return '\n'
+        if (child.type === 'wiki_link') return child.attrs?.title || ''
+        return inlineText(child)
+      })
+      .join('')
+  }
+
+  function nodeToBlocks(node: any, index = 0): ReaderBlock[] {
     switch (node.type) {
       case 'heading': {
         const level = node.attrs?.level || 1
-        const text = (node.content || []).map((n: any) => n.text || '').join('')
-        return `<h${level}>${text}</h${level}>`
+        return [{ type: 'heading', level, text: inlineText(node) }]
       }
       case 'paragraph':
-        return '<p>' + (node.content || []).map((n: any) => n.text || '').join('') + '</p>'
+        return [{ type: 'paragraph', text: inlineText(node) }]
       case 'bullet_list':
-        return '<ul>' + (node.content || []).map((n: any) => nodeToHtml(n)).join('') + '</ul>'
+        return (node.content || []).map((n: any) => ({ type: 'bullet', text: inlineText(n) }))
       case 'ordered_list':
-        return '<ol>' + (node.content || []).map((n: any) => nodeToHtml(n)).join('') + '</ol>'
+        return (node.content || []).map((n: any, i: number) => ({
+          type: 'ordered',
+          text: `${i + 1}. ${inlineText(n)}`,
+        }))
       case 'list_item':
-        return '<li>' + (node.content || []).map((n: any) => nodeToHtml(n)).join('') + '</li>'
-      case 'todo_item': {
-        const checked = node.attrs?.checked ? 'checked' : ''
-        return `<div class="todo-item ${checked}">${(node.content || []).map((n: any) => nodeToHtml(n)).join('')}</div>`
-      }
+        return [{ type: 'bullet', text: inlineText(node) }]
+      case 'todo_item':
+        return [{ type: 'todo', text: inlineText(node), checked: !!node.attrs?.checked }]
       case 'code_block':
-        return '<pre><code>' + (node.content || []).map((n: any) => n.text || '').join('') + '</code></pre>'
+        return [{ type: 'code', text: inlineText(node) }]
       case 'blockquote':
-        return '<blockquote>' + (node.content || []).map((n: any) => nodeToHtml(n)).join('') + '</blockquote>'
+        return [{ type: 'quote', text: inlineText(node) }]
       case 'image':
-        return `<img src="${node.attrs?.src || ''}" alt="${node.attrs?.alt || ''}" />`
+        return [{ type: 'image', text: node.attrs?.alt || 'Image' }]
       case 'text':
-        return node.text || ''
+        return [{ type: 'paragraph', text: node.text || '' }]
       default:
-        return ''
+        return [{ type: 'paragraph', text: inlineText(node) || String(index ? '' : '') }]
     }
   }
 </script>
@@ -166,7 +184,29 @@
     </header>
 
     <div class="reader-content">
-      {@html renderContent(currentPageContent)}
+      {#each renderContent(currentPageContent) as block}
+        {#if block.type === 'heading' && block.level === 1}
+          <h1>{block.text}</h1>
+        {:else if block.type === 'heading' && block.level === 2}
+          <h2>{block.text}</h2>
+        {:else if block.type === 'heading'}
+          <h3>{block.text}</h3>
+        {:else if block.type === 'bullet'}
+          <p class="list-line">• {block.text}</p>
+        {:else if block.type === 'ordered'}
+          <p class="list-line">{block.text}</p>
+        {:else if block.type === 'todo'}
+          <p class="todo-item" class:checked={block.checked}>[{block.checked ? 'x' : ' '}] {block.text}</p>
+        {:else if block.type === 'code'}
+          <pre><code>{block.text}</code></pre>
+        {:else if block.type === 'quote'}
+          <blockquote>{block.text}</blockquote>
+        {:else if block.type === 'image'}
+          <p class="image-placeholder">[Image: {block.text}]</p>
+        {:else}
+          <p>{block.text}</p>
+        {/if}
+      {/each}
     </div>
   {/if}
 </div>

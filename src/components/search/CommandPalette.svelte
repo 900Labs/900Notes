@@ -38,6 +38,11 @@
 
   type ListItem = CommandItem | SearchItem
 
+  type SnippetPart = {
+    text: string
+    highlighted: boolean
+  }
+
   let commands: CommandItem[] = $derived([
     { id: 'cmd-new', label: $t('command.newPage'), icon: '+', action: 'newPage', type: 'command' },
     { id: 'cmd-template', label: $t('command.newFromTemplate'), icon: '📋', action: 'newFromTemplate', type: 'command' },
@@ -74,6 +79,41 @@
   onMount(() => {
     inputElement.focus()
   })
+
+  function decodeSnippetText(value: string): string {
+    return value
+      .replaceAll('&lt;', '<')
+      .replaceAll('&gt;', '>')
+      .replaceAll('&quot;', '"')
+      .replaceAll('&#39;', "'")
+      .replaceAll('&amp;', '&')
+  }
+
+  function snippetParts(snippet: string): SnippetPart[] {
+    const parts: SnippetPart[] = []
+    let cursor = 0
+    while (cursor < snippet.length) {
+      const start = snippet.indexOf('<mark>', cursor)
+      if (start === -1) {
+        parts.push({ text: decodeSnippetText(snippet.slice(cursor)), highlighted: false })
+        break
+      }
+      if (start > cursor) {
+        parts.push({ text: decodeSnippetText(snippet.slice(cursor, start)), highlighted: false })
+      }
+      const end = snippet.indexOf('</mark>', start + 6)
+      if (end === -1) {
+        parts.push({ text: decodeSnippetText(snippet.slice(start)), highlighted: false })
+        break
+      }
+      parts.push({
+        text: decodeSnippetText(snippet.slice(start + 6, end)),
+        highlighted: true,
+      })
+      cursor = end + 7
+    }
+    return parts
+  }
 
   function handleSearch() {
     if (searchTimer) clearTimeout(searchTimer)
@@ -184,7 +224,13 @@
                   <span class="font-medium text-sm">{result.title}</span>
                 </div>
                 <p class="text-xs text-gray-500 mt-0.5 line-clamp-2">
-                  {@html result.snippet}
+                  {#each snippetParts(result.snippet) as part}
+                    {#if part.highlighted}
+                      <mark class="bg-yellow-200 dark:bg-yellow-700/60 rounded px-0.5">{part.text}</mark>
+                    {:else}
+                      {part.text}
+                    {/if}
+                  {/each}
                 </p>
               </button>
             {/each}

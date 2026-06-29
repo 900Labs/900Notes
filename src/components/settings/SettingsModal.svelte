@@ -3,13 +3,13 @@
   import { pluginStore } from '../../stores/plugins.svelte'
   import { t, locales, setLocale, type Locale } from '../../i18n'
   import * as api from '../../lib/api'
-  import { appDataDir } from '@tauri-apps/api/path'
 
   let { onClose }: { onClose: () => void } = $props()
 
   let activeSection = $state<'appearance' | 'language' | 'data' | 'sync' | 'sharing' | 'workspaces' | 'security' | 'plugins' | 'about'>('appearance')
   let deviceName = $state('')
   let port = $state(9876)
+  let syncPairingSecret = $state('')
 
   async function handleExport() {
     const json = await api.exportWorkspace()
@@ -45,7 +45,7 @@
   }
 
   async function handleStartSync() {
-    await syncStore.start(deviceName || undefined, port || undefined)
+    await syncStore.start(deviceName || undefined, port || undefined, syncPairingSecret)
   }
 
   async function handleStopSync() {
@@ -384,8 +384,21 @@
                   class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
                 />
               </div>
+              <div>
+                <label class="text-sm font-medium block mb-1" for="sync-pairing-secret">{$t('sync.pairingSecret')}</label>
+                <input
+                  id="sync-pairing-secret"
+                  type="password"
+                  bind:value={syncPairingSecret}
+                  minlength="12"
+                  autocomplete="new-password"
+                  class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
+                />
+                <p class="mt-1 text-xs text-gray-500">{$t('sync.pairingSecretHelp')}</p>
+              </div>
               <button
                 onclick={handleStartSync}
+                disabled={syncPairingSecret.trim().length < 12}
                 class="px-4 py-2 rounded-lg text-sm font-medium bg-accent text-white hover:bg-accent-dark"
               >{$t('sync.start')}</button>
             </div>
@@ -738,7 +751,7 @@
           {/if}
           <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
             <button
-              onclick={async () => { const dir = await appDataDir(); await pluginStore.scanAndInstall(dir) }}
+              onclick={() => pluginStore.scanAndInstall()}
               class="px-4 py-2 rounded-lg text-sm font-medium bg-accent text-white hover:bg-accent/90"
             >Scan for Plugins</button>
           </div>

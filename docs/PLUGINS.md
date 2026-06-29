@@ -8,6 +8,7 @@
 - **Frontend (TypeScript)**: Dynamically loads plugin JS files, provides a `PluginApi` for registering custom blocks, commands, and hooks.
 - **Custom Blocks**: Plugin-defined ProseMirror node specs that can be merged into the editor schema.
 - **Settings UI**: A "Plugins" tab in Settings allows enabling/disabling and removing plugins.
+- **Security boundary**: The Rust backend derives the plugin root from Tauri's `app_data_dir`; frontend callers cannot choose an arbitrary plugin directory.
 
 ## Plugin Structure
 
@@ -117,6 +118,13 @@ plugin.registerHook('pageSave', (pageId) => {
 3. Click "Scan for Plugins"
 4. Toggle plugins on/off as needed
 
+## Path Rules
+
+- Plugin IDs must be a single safe directory name. Absolute paths, empty IDs, `..`, and nested IDs such as `plugins/example` are rejected.
+- `entryPoint` must be a safe relative file path inside the plugin directory. Nested paths such as `dist/index.js` are allowed.
+- Absolute entry points, `..` traversal, empty paths, and `./index.js` are rejected.
+- The backend canonicalizes the plugin directory and requested file before reading. Symlinks or paths that resolve outside the plugin directory are rejected.
+
 ## Example Plugins
 
 See `examples/plugins/`:
@@ -128,5 +136,7 @@ See `examples/plugins/`:
 
 - Plugins run in the webview context with access to the DOM and Tauri APIs
 - Plugins are loaded via `new Function()` (not ES modules) for simplicity
+- Desktop CSP intentionally allows `unsafe-eval` for plugin loading. Mobile CSP does not because the mobile companion does not load plugins.
+- Plugin file reads are confined to `<app_data_dir>/plugins/<plugin-id>/`
 - Only enable plugins from trusted sources
 - Future: sandboxed plugin execution, permission system

@@ -50,7 +50,7 @@ This document formalizes the security posture, identifies threats, and describes
 
 1. **Tauri IPC Boundary**: Between the Svelte WebView and Rust backend. All commands are explicitly registered; no arbitrary code execution from the frontend.
 2. **File System Boundary**: Data at rest on disk. Protected by OS-level permissions and optional AES-256-GCM encryption.
-3. **LAN Sync Boundary**: Network communication with peer devices. Unencrypted UDP, limited to local network.
+3. **LAN Sync Boundary**: Network communication with peer devices. mDNS announcements are visible on the local network; TCP sync handshakes are encrypted with the user-provided pairing secret.
 
 ## 4. Threat Actors
 
@@ -76,15 +76,18 @@ This document formalizes the security posture, identifies threats, and describes
 
 **Severity**: HIGH (without encryption) → MEDIUM (with encryption)
 
-### 5.2 LAN Sync Eavesdropping (T2)
+### 5.2 LAN Sync Eavesdropping and Pairing (T2)
 
 **Threat**: Network attacker intercepts sync traffic between peers.  
-**Impact**: Disclosure of page content being synced.  
+**Impact**: Disclosure of page content if the pairing secret is weak or known.
 **Likelihood**: Low (requires being on same LAN).  
 **Mitigation**:
 - Sync is opt-in and only activates when user explicitly starts it.
 - mDNS discovery is limited to local network.
-- **Residual risk**: Sync traffic is not encrypted. Sprint 16+ should add TLS or Noise Protocol for sync.
+- Starting sync requires a 12+ character pairing secret.
+- TCP sync handshakes are encrypted with AES-256-GCM using the pairing secret.
+- Sync messages are capped at 100 MB.
+- **Residual risk**: mDNS still reveals that a 900Notes sync service is present. A weak/reused pairing secret weakens content confidentiality. Future work should replace passphrase-derived transport keys with an authenticated pairing protocol.
 
 **Severity**: MEDIUM
 
@@ -165,12 +168,18 @@ This document formalizes the security posture, identifies threats, and describes
 | Encryption unlock gate (frontend) | ✅ Implemented | Audit |
 | Content Security Policy (CSP) | ✅ Implemented | Audit |
 | Sync message size cap (100MB) | ✅ Implemented | Audit |
+| Encrypted sync transport using pairing secret | ✅ Implemented | Audit remediation |
+| Mobile CSP without `unsafe-eval` | ✅ Implemented | Audit remediation |
+| Plugin file path canonicalization | ✅ Implemented | Audit remediation |
+| Attachment BLOB size cap (25MB) | ✅ Implemented | Audit remediation |
+| Page hierarchy cycle rejection | ✅ Implemented | Audit remediation |
+| Escaped search snippets | ✅ Implemented | Audit remediation |
 | DB transaction wrapping (atomicity) | ✅ Implemented | Audit |
 | Revision pruning (last 50 per page) | ✅ Implemented | Audit |
 | Cargo audit in CI | ✅ Implemented | Audit |
 | Iterative key derivation (100K rounds) | ✅ Implemented | Audit |
 | CSPRNG for salt/nonce (getrandom) | ✅ Implemented | Audit |
-| Encrypted sync transport | ❌ Not implemented | Future |
+| Authenticated sync pairing protocol | ❌ Not implemented | Future |
 | PBKDF2/Argon2 key derivation | ❌ Not implemented | Future |
 | Auto-lock timeout | ❌ Not implemented | Future |
 | Recovery key mechanism | ❌ Not implemented | Future |
@@ -186,7 +195,7 @@ This document formalizes the security posture, identifies threats, and describes
 ## 8. Future Work
 
 - **PBKDF2/Argon2**: Replace SHA-256 key derivation with a proper KDF.
-- **Encrypted sync transport**: Add TLS or Noise Protocol for LAN sync.
+- **Authenticated sync pairing**: Replace the shared text secret with QR-code pairing or a PAKE/Noise-based flow.
 - **Auto-lock**: Re-lock the database after a period of inactivity.
 - **Recovery key**: Generate a recovery key during encryption setup.
 - **WAL encryption**: Encrypt WAL/SHM files or switch to journal mode that doesn't create sidecar files.

@@ -9,6 +9,8 @@ import { schema } from './schema'
 import { createNodeViews } from './nodeviews'
 import * as api from '../api'
 
+const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024
+
 export interface EditorCallbacks {
   onChange: (content: string) => void
   onWikiLinkClick: (title: string) => void
@@ -308,7 +310,9 @@ function buildImagePastePlugin(callbacks: EditorCallbacks): Plugin {
         for (const file of Array.from(files)) {
           if (file.type.startsWith('image/')) {
             handled = true
-            insertImageFromFile(view, file, callbacks)
+            insertImageFromFile(view, file, callbacks).catch((error) => {
+              console.error('Image attachment failed:', error)
+            })
           }
         }
         if (handled) {
@@ -326,7 +330,9 @@ function buildImagePastePlugin(callbacks: EditorCallbacks): Plugin {
         for (const file of Array.from(files)) {
           if (file.type.startsWith('image/')) {
             handled = true
-            insertImageFromFile(view, file, callbacks)
+            insertImageFromFile(view, file, callbacks).catch((error) => {
+              console.error('Image attachment failed:', error)
+            })
           }
         }
         if (handled) {
@@ -342,6 +348,9 @@ function buildImagePastePlugin(callbacks: EditorCallbacks): Plugin {
 async function insertImageFromFile(view: EditorView, file: File, callbacks: EditorCallbacks) {
   const pageId = callbacks.getPageId?.()
   if (!pageId) return
+  if (file.size > MAX_ATTACHMENT_BYTES) {
+    throw new Error('Attachment exceeds 25 MB limit')
+  }
 
   const arrayBuffer = await file.arrayBuffer()
   const data = Array.from(new Uint8Array(arrayBuffer))
@@ -381,6 +390,10 @@ export async function insertAudioBlock(
   duration: number,
   title: string,
 ): Promise<void> {
+  if (audioData.length > MAX_ATTACHMENT_BYTES) {
+    throw new Error('Attachment exceeds 25 MB limit')
+  }
+
   const attachment = await api.createAttachment({
     pageId,
     fileName: title,

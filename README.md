@@ -63,12 +63,13 @@ Built by [900 Labs](https://www.900labs.com) — building enterprise-grade open 
 - Export individual pages to Markdown
 - Import from JSON (round-trip restore)
 - Import from Markdown files
+- Attachment storage is capped at 25 MB per file to protect low-memory devices
 - No telemetry, no network calls
 
 ### Internationalization
-- 6 languages: English, French, Spanish, Swahili, Hindi, Arabic (RTL)
+- 10 languages: English, French, Spanish, Swahili, Hindi, Arabic (RTL), Portuguese, Bengali, Urdu (RTL), Amharic
 - Locale-aware formatting
-- RTL layout support for Arabic
+- RTL layout support for Arabic and Urdu
 
 ### Settings
 - Theme: light, dark, or system
@@ -89,6 +90,8 @@ Built by [900 Labs](https://www.900labs.com) — building enterprise-grade open 
 ### LAN Sync
 - Peer-to-peer sync over local network (mDNS + TCP)
 - Opt-in — only activates when explicitly started
+- Requires the same 12+ character pairing secret on each device
+- Sync handshakes are encrypted with AES-256-GCM using the pairing secret
 - Sync message size cap (100MB) to prevent DoS
 
 ### Accessibility
@@ -156,7 +159,7 @@ Production app bundles and installers are written under `src-tauri/target/releas
 │   │   ├── settings/             # Settings modal
 │   │   └── common/               # Shared UI primitives
 │   ├── stores/                   # Svelte 5 Runes state stores
-│   ├── i18n/                     # Translation files (6 languages)
+│   ├── i18n/                     # Translation files (10 languages)
 │   ├── lib/                      # API wrapper, types, editor schema
 │   └── utils/                    # Date, search utilities
 ├── src-tauri/                    # Rust backend
@@ -187,8 +190,13 @@ Your data never leaves your machine unless you explicitly export it.
 ## Documentation
 
 - [Architecture Overview](docs/ARCHITECTURE.md) — system design, data flow, and offline model
+- [Threat Model](docs/THREAT_MODEL.md) — security boundaries, mitigations, and residual risks
+- [Privacy Model](docs/PRIVACY_MODEL.md) — data inventory and data-flow rules
+- [Plugin System](docs/PLUGINS.md) — local plugin format, security notes, and examples
+- [Mobile Companion](docs/MOBILE.md) — read-only mobile build architecture and CSP
 - [Roadmap](docs/ROADMAP.md) — MVP scope and post-MVP phases
 - [Quality Gate](docs/QUALITY_GATE.md) — required pre-merge validation baseline
+- [Maintainer Handoff](docs/MAINTAINER_HANDOFF.md) — post-audit remediation summary and review checklist
 
 ## Contributing
 

@@ -79,12 +79,13 @@ When the user explicitly enables sync:
        └──► Sync Queue (tracks pending ops)
 ```
 
-**Data stays on the LAN.** Sync uses mDNS (UDP multicast) on the local network. No data is sent to any external server.
+**Data stays on the LAN.** Sync uses mDNS (UDP multicast) for discovery on the local network and encrypted TCP handshakes for page exchange. No data is sent to any external server.
 
 **Privacy implications**:
 - Other devices on the same LAN can see that 900Notes is running (mDNS announcement).
-- Page content is exchanged in plaintext over the LAN during sync.
-- Only devices running 900Notes with sync enabled can participate.
+- Page content is encrypted in transit with AES-256-GCM using the pairing secret entered when sync is started.
+- Only devices running 900Notes with sync enabled and the same pairing secret can complete a sync exchange.
+- Weak or reused pairing secrets reduce confidentiality; use a long, unique secret for each trusted device group.
 
 ### 3.3 Share Bundles (Export/Import)
 
@@ -136,7 +137,7 @@ Only when the user explicitly takes action:
 
 | Action | What leaves | Where it goes | Encrypted? |
 |--------|-------------|---------------|------------|
-| Enable LAN sync | Page content (CRDT) | LAN peers | No (plaintext) |
+| Enable LAN sync | Page content (sync handshake) | LAN peers | Yes (AES-256-GCM with pairing secret) |
 | Export share bundle | Selected pages | File on disk | Yes (AES-256-GCM) |
 | Export HTML | Single page | File on disk | No |
 | Export encrypted workspace | All pages | File on disk | Yes (AES-256-GCM) |
@@ -149,7 +150,7 @@ Only when the user explicitly takes action:
 ### Database at Rest (Sprint 14)
 
 - **Algorithm**: AES-256-GCM
-- **Key derivation**: SHA-256(passphrase + 32-byte salt)
+- **Key derivation**: Iterative SHA-256(passphrase + 32-byte salt), 100,000 rounds
 - **Storage**: Encrypted DB in `.enc` file, salt + nonce in `.meta` JSON file
 - **Passphrase**: Not stored anywhere. Held in memory only while the database is unlocked.
 - **Failure mode**: If the passphrase is lost, data is irrecoverable.
@@ -157,7 +158,7 @@ Only when the user explicitly takes action:
 ### Share Bundles (Sprint 13)
 
 - **Algorithm**: AES-256-GCM
-- **Key derivation**: SHA-256(passphrase + 32-byte salt)
+- **Key derivation**: Iterative SHA-256(passphrase + 32-byte salt), 100,000 rounds
 - **Per-bundle**: Unique salt and nonce for every export
 - **Passphrase**: Chosen by user at export time, shared out-of-band
 
@@ -194,9 +195,10 @@ Only when the user explicitly takes action:
 | sha2 | Hashing | No |
 | mdns-sd | LAN device discovery | Yes (LAN only, UDP multicast) |
 | serde / serde_json | Serialization | No |
-| printpdf | PDF export | No |
 | uuid | ID generation | No |
 | chrono | Timestamps | No |
+
+PDF export is implemented by a small built-in text PDF writer in `src-tauri/src/services/pdf.rs`; it does not require a third-party PDF crate.
 
 **No analytics SDKs. No advertising SDKs. No tracking libraries.**
 

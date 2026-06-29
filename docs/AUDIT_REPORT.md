@@ -28,7 +28,7 @@
 
 1. **PBKDF2/Argon2**: The iterative SHA-256 is better than single-pass but not as strong as PBKDF2 or Argon2. Consider migrating to `argon2` crate in the future.
 2. **Plugin sandboxing**: Consider Web Workers or iframe sandboxing for plugin execution.
-3. **Sync authentication**: No authentication between sync peers. Anyone on the network can sync. Add a shared secret or key exchange.
+3. **Sync pairing hardening**: Sync now requires a shared pairing secret and encrypts handshakes. Future work should replace the text secret with QR-code pairing or a PAKE/Noise-based authenticated flow.
 
 ---
 
@@ -137,7 +137,7 @@
 - [ ] **Export workspace** — Export to JSON, verify file contents
 - [ ] **Import workspace** — Import JSON, verify pages created
 - [ ] **Share bundle** — Export pages with passphrase, import on fresh instance
-- [ ] **Sync** — Start sync on two instances, verify pages sync (manual test)
+- [ ] **Sync** — Start sync on two instances with the same pairing secret, verify pages sync
 
 ### Security
 
@@ -198,7 +198,7 @@
 ### Remaining Recommendations (Non-blocking)
 
 1. Migrate to Argon2 for key derivation (stronger than iterative SHA-256)
-2. Add sync authentication (shared secret between peers)
+2. Replace shared-secret sync pairing with QR-code pairing or a PAKE/Noise-based flow
 3. Sandbox plugin execution (Web Workers or iframe)
 4. Fix remaining 21 a11y warnings (div click handlers → buttons)
 5. Implement local HTTP server for web clipper

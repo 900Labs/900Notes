@@ -2,13 +2,13 @@ import type { Plugin, PluginManifest, CustomBlockDef, LoadedPlugin, PluginApi } 
 import { readPluginFile, getEnabledPlugins } from '../api'
 import { pluginStore } from '../../stores/plugins.svelte'
 
-export async function loadEnabledPlugins(appDataDir: string): Promise<void> {
+export async function loadEnabledPlugins(): Promise<void> {
   const enabledPlugins = await getEnabledPlugins()
   const loaded: LoadedPlugin[] = []
 
   for (const plugin of enabledPlugins) {
     try {
-      const loadedPlugin = await loadPlugin(appDataDir, plugin)
+      const loadedPlugin = await loadPlugin(plugin)
       loaded.push(loadedPlugin)
     } catch (e) {
       console.error(`Failed to load plugin ${plugin.id}:`, e)
@@ -18,7 +18,7 @@ export async function loadEnabledPlugins(appDataDir: string): Promise<void> {
   pluginStore.loadedPlugins = loaded
 }
 
-async function loadPlugin(appDataDir: string, plugin: Plugin): Promise<LoadedPlugin> {
+async function loadPlugin(plugin: Plugin): Promise<LoadedPlugin> {
   const blocks: CustomBlockDef[] = []
   const commands: { id: string; label: string; handler: () => void }[] = []
   const hooks = new Map<string, ((...args: unknown[]) => void)[]>()
@@ -47,7 +47,7 @@ async function loadPlugin(appDataDir: string, plugin: Plugin): Promise<LoadedPlu
     customBlocks: [],
   }
 
-  const jsCode = await readPluginFile(appDataDir, plugin.id, plugin.entryPoint)
+  const jsCode = await readPluginFile(plugin.id, plugin.entryPoint)
 
   const moduleFn = new Function('plugin', jsCode)
   moduleFn(api)

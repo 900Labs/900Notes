@@ -20,11 +20,11 @@ class PluginStore {
     }
   }
 
-  async scanAndInstall(appDataDir: string) {
+  async scanAndInstall() {
     this.loading = true
     this.error = null
     try {
-      const installed = await scanPluginsDir(appDataDir)
+      const installed = await scanPluginsDir()
       this.plugins = await getAllPlugins()
       return installed
     } catch (e) {

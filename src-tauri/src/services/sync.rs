@@ -7,8 +7,10 @@ use std::thread;
 
 use crate::db::Database;
 use crate::models::*;
+use crate::services::encryption::{decrypt_data, encrypt_data};
 
 const SERVICE_TYPE: &str = "_900notes._tcp.local.";
+const MAX_SYNC_MESSAGE_BYTES: usize = 100 * 1024 * 1024;
 
 pub struct SyncService {
     daemon: Option<ServiceDaemon>,
@@ -17,11 +19,12 @@ pub struct SyncService {
     device_id: String,
     device_name: String,
     port: u16,
+    pairing_secret: String,
     running: Arc<Mutex<bool>>,
 }
 
 impl SyncService {
-    pub fn new(device_id: &str, device_name: &str, port: u16) -> Self {
+    pub fn new(device_id: &str, device_name: &str, port: u16, pairing_secret: &str) -> Self {
         SyncService {
             daemon: None,
             server_thread: None,
@@ -29,6 +32,7 @@ impl SyncService {
             device_id: device_id.to_string(),
             device_name: device_name.to_string(),
             port,
+            pairing_secret: pairing_secret.to_string(),
             running: Arc::new(Mutex::new(false)),
         }
     }
@@ -115,6 +119,7 @@ impl SyncService {
         let port = self.port;
         let device_id = self.device_id.clone();
         let device_name = self.device_name.clone();
+        let pairing_secret = self.pairing_secret.clone();
         self.server_thread = Some(thread::spawn(move || {
             let listener = match TcpListener::bind(("0.0.0.0", port)) {
                 Ok(l) => l,
@@ -127,8 +132,9 @@ impl SyncService {
                         let db = db.clone();
                         let did = device_id.clone();
                         let dname = device_name.clone();
+                        let secret = pairing_secret.clone();
                         thread::spawn(move || {
-                            handle_sync_connection(stream, db, did, dname);
+                            handle_sync_connection(stream, db, did, dname, secret);
                         });
                     }
                     Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
@@ -202,25 +208,8 @@ impl SyncService {
         )
         .map_err(|e| format!("connect failed: {e}"))?;
 
-        let json = serde_json::to_string(&handshake).map_err(|e| e.to_string())?;
-        let json_bytes = json.as_bytes();
-        let len = json_bytes.len() as u32;
-        stream
-            .write_all(&len.to_be_bytes())
-            .map_err(|e| e.to_string())?;
-        stream.write_all(json_bytes).map_err(|e| e.to_string())?;
-
-        // Read response
-        let mut len_buf = [0u8; 4];
-        stream.read_exact(&mut len_buf).map_err(|e| e.to_string())?;
-        let resp_len = u32::from_be_bytes(len_buf) as usize;
-        let mut resp_buf = vec![0u8; resp_len];
-        stream
-            .read_exact(&mut resp_buf)
-            .map_err(|e| e.to_string())?;
-
-        let remote_handshake: SyncHandshake =
-            serde_json::from_slice(&resp_buf).map_err(|e| e.to_string())?;
+        write_encrypted_handshake(&mut stream, &handshake, &self.pairing_secret)?;
+        let remote_handshake = read_encrypted_handshake(&mut stream, &self.pairing_secret)?;
 
         // Merge remote pages into local DB
         let db_guard = db.lock().map_err(|e| e.to_string())?;
@@ -257,22 +246,12 @@ fn handle_sync_connection(
     db: Arc<Mutex<Database>>,
     device_id: String,
     device_name: String,
+    pairing_secret: String,
 ) {
-    // Read handshake
-    let mut len_buf = [0u8; 4];
-    if stream.read_exact(&mut len_buf).is_err() {
-        return;
-    }
-    let len = u32::from_be_bytes(len_buf) as usize;
-    if len > 100 * 1024 * 1024 {
-        return;
-    }
-    let mut buf = vec![0u8; len];
-    if stream.read_exact(&mut buf).is_err() {
-        return;
-    }
+    let _ = stream.set_read_timeout(Some(std::time::Duration::from_secs(10)));
+    let _ = stream.set_write_timeout(Some(std::time::Duration::from_secs(10)));
 
-    let remote_handshake: SyncHandshake = match serde_json::from_slice(&buf) {
+    let remote_handshake = match read_encrypted_handshake(&mut stream, &pairing_secret) {
         Ok(h) => h,
         Err(_) => return,
     };
@@ -311,15 +290,82 @@ fn handle_sync_connection(
         };
         drop(db_guard);
 
-        let json = match serde_json::to_string(&handshake) {
-            Ok(j) => j,
-            Err(_) => return,
-        };
-        let json_bytes = json.as_bytes();
-        let resp_len = json_bytes.len() as u32;
-        if stream.write_all(&resp_len.to_be_bytes()).is_err() {
-            return;
+        let _ = write_encrypted_handshake(&mut stream, &handshake, &pairing_secret);
+    }
+}
+
+fn write_encrypted_handshake<W: Write>(
+    stream: &mut W,
+    handshake: &SyncHandshake,
+    pairing_secret: &str,
+) -> Result<(), String> {
+    let json = serde_json::to_vec(handshake).map_err(|e| e.to_string())?;
+    if json.len() > MAX_SYNC_MESSAGE_BYTES {
+        return Err("sync message too large".to_string());
+    }
+    let encrypted = encrypt_data(&json, pairing_secret)?;
+    if encrypted.len() > MAX_SYNC_MESSAGE_BYTES {
+        return Err("encrypted sync message too large".to_string());
+    }
+    let len: u32 = encrypted
+        .len()
+        .try_into()
+        .map_err(|_| "sync message too large".to_string())?;
+    stream
+        .write_all(&len.to_be_bytes())
+        .map_err(|e| e.to_string())?;
+    stream.write_all(&encrypted).map_err(|e| e.to_string())
+}
+
+fn read_encrypted_handshake<R: Read>(
+    stream: &mut R,
+    pairing_secret: &str,
+) -> Result<SyncHandshake, String> {
+    let mut len_buf = [0u8; 4];
+    stream.read_exact(&mut len_buf).map_err(|e| e.to_string())?;
+    let len = u32::from_be_bytes(len_buf) as usize;
+    if len > MAX_SYNC_MESSAGE_BYTES {
+        return Err("sync message too large".to_string());
+    }
+    let mut buf = vec![0u8; len];
+    stream.read_exact(&mut buf).map_err(|e| e.to_string())?;
+    let plaintext = decrypt_data(&buf, pairing_secret)?;
+    if plaintext.len() > MAX_SYNC_MESSAGE_BYTES {
+        return Err("sync message too large".to_string());
+    }
+    serde_json::from_slice(&plaintext).map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Cursor;
+
+    fn test_handshake() -> SyncHandshake {
+        SyncHandshake {
+            device_id: "device-a".to_string(),
+            device_name: "Device A".to_string(),
+            page_metas: Vec::new(),
         }
-        if stream.write_all(json_bytes).is_err() {}
+    }
+
+    #[test]
+    fn encrypted_handshake_round_trips() {
+        let mut frame = Vec::new();
+        write_encrypted_handshake(&mut frame, &test_handshake(), "shared secret").unwrap();
+
+        let mut cursor = Cursor::new(frame);
+        let handshake = read_encrypted_handshake(&mut cursor, "shared secret").unwrap();
+        assert_eq!(handshake.device_id, "device-a");
+    }
+
+    #[test]
+    fn encrypted_handshake_rejects_wrong_secret() {
+        let mut frame = Vec::new();
+        write_encrypted_handshake(&mut frame, &test_handshake(), "shared secret").unwrap();
+
+        let mut cursor = Cursor::new(frame);
+        let result = read_encrypted_handshake(&mut cursor, "wrong secret");
+        assert!(result.is_err());
     }
 }

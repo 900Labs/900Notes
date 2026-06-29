@@ -13,7 +13,7 @@
 - [x] Tags with colors and sidebar filtering
 - [x] Full-text search with snippet previews (Ctrl/Cmd+K)
 - [x] Export/import (JSON workspace, Markdown export/import)
-- [x] i18n (6 languages: English, French, Spanish, Swahili, Hindi, Arabic RTL)
+- [x] i18n (10 languages: English, French, Spanish, Swahili, Hindi, Arabic RTL, Portuguese, Bengali, Urdu RTL, Amharic)
 - [x] Settings (theme, language, font size, line spacing)
 - [x] Light/dark theme
 - [x] Trash with soft-delete and restore

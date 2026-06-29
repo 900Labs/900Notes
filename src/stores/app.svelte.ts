@@ -446,10 +446,10 @@ export class SyncStore {
     }
   }
 
-  async start(deviceName?: string, port?: number) {
+  async start(deviceName: string | undefined, port: number | undefined, pairingSecret: string) {
     this.error = null
     try {
-      this.status = await api.startSync(deviceName, port)
+      this.status = await api.startSync(deviceName, port, pairingSecret)
     } catch (e) {
       this.error = String(e)
     }

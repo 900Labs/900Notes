@@ -1,9 +1,13 @@
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, OptionalExtension};
 use std::collections::HashMap;
 use std::path::Path;
 use thiserror::Error;
 
 use crate::models::*;
+
+const MAX_ATTACHMENT_BYTES: usize = 25 * 1024 * 1024;
+const SEARCH_HIGHLIGHT_START: &str = "\u{001f}900notes_mark_start\u{001f}";
+const SEARCH_HIGHLIGHT_END: &str = "\u{001f}900notes_mark_end\u{001f}";
 
 #[derive(Debug)]
 pub struct SyncQueueEntry {
@@ -97,7 +101,6 @@ impl Database {
                 page_id UNINDEXED,
                 title,
                 content,
-                content='',
                 tokenize='unicode61'
             );
 
@@ -257,7 +260,75 @@ impl Database {
                 ('default_block_type', 'paragraph');
             ",
         )?;
+        self.ensure_search_index_schema()?;
         self.seed_builtin_templates()?;
+        Ok(())
+    }
+
+    fn ensure_search_index_schema(&self) -> Result<(), DbError> {
+        let sql: Option<String> = self
+            .conn
+            .query_row(
+                "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'pages_fts'",
+                [],
+                |row| row.get(0),
+            )
+            .optional()?;
+
+        if sql
+            .as_deref()
+            .is_some_and(|s| s.contains("content=''") || s.contains("content=\"\""))
+        {
+            self.rebuild_search_index_table()?;
+        } else {
+            self.conn.execute(
+                "INSERT INTO pages_fts(page_id, title, content)
+                 SELECT p.id, p.title, p.content
+                 FROM pages p
+                 WHERE NOT EXISTS (
+                     SELECT 1 FROM pages_fts f WHERE f.page_id = p.id
+                 )",
+                [],
+            )?;
+        }
+
+        Ok(())
+    }
+
+    fn rebuild_search_index_table(&self) -> Result<(), DbError> {
+        self.conn.execute_batch(
+            "
+            DROP TRIGGER IF EXISTS pages_fts_insert;
+            DROP TRIGGER IF EXISTS pages_fts_update;
+            DROP TRIGGER IF EXISTS pages_fts_delete;
+            DROP TABLE IF EXISTS pages_fts;
+
+            CREATE VIRTUAL TABLE pages_fts USING fts5(
+                page_id UNINDEXED,
+                title,
+                content,
+                tokenize='unicode61'
+            );
+
+            CREATE TRIGGER pages_fts_insert AFTER INSERT ON pages BEGIN
+                INSERT INTO pages_fts(page_id, title, content)
+                VALUES (new.id, new.title, new.content);
+            END;
+
+            CREATE TRIGGER pages_fts_update AFTER UPDATE ON pages BEGIN
+                DELETE FROM pages_fts WHERE page_id = old.id;
+                INSERT INTO pages_fts(page_id, title, content)
+                VALUES (new.id, new.title, new.content);
+            END;
+
+            CREATE TRIGGER pages_fts_delete AFTER DELETE ON pages BEGIN
+                DELETE FROM pages_fts WHERE page_id = old.id;
+            END;
+
+            INSERT INTO pages_fts(page_id, title, content)
+            SELECT id, title, content FROM pages;
+            ",
+        )?;
         Ok(())
     }
 
@@ -762,6 +833,7 @@ impl Database {
     }
 
     pub fn move_page(&self, input: &MovePageInput) -> Result<Page, DbError> {
+        self.validate_page_move(&input.id, input.parent_id.as_deref())?;
         let rows = self.conn.execute(
             "UPDATE pages SET parent_id = ?1, sort_order = ?2 WHERE id = ?3",
             params![input.parent_id, input.sort_order, input.id],
@@ -770,6 +842,41 @@ impl Database {
             return Err(DbError::NotFound(format!("page {}", input.id)));
         }
         self.get_page_by_id(&input.id)
+    }
+
+    fn validate_page_move(&self, page_id: &str, parent_id: Option<&str>) -> Result<(), DbError> {
+        let page_exists: Option<String> = self
+            .conn
+            .query_row(
+                "SELECT id FROM pages WHERE id = ?1 AND deleted_at IS NULL",
+                params![page_id],
+                |row| row.get(0),
+            )
+            .optional()?;
+        if page_exists.is_none() {
+            return Err(DbError::NotFound(format!("page {page_id}")));
+        }
+
+        let mut current_parent = parent_id.map(str::to_string);
+        while let Some(current_id) = current_parent {
+            if current_id == page_id {
+                return Err(DbError::InvalidInput(
+                    "page cannot be moved under itself or its descendants".to_string(),
+                ));
+            }
+
+            current_parent = self
+                .conn
+                .query_row(
+                    "SELECT parent_id FROM pages WHERE id = ?1 AND deleted_at IS NULL",
+                    params![current_id],
+                    |row| row.get::<_, Option<String>>(0),
+                )
+                .optional()?
+                .ok_or_else(|| DbError::NotFound("parent page".to_string()))?;
+        }
+
+        Ok(())
     }
 
     pub fn get_recent_pages(&self, limit: i64) -> Result<Vec<Page>, DbError> {
@@ -932,22 +1039,31 @@ impl Database {
         }
         let fts_query = format_fts_query(query);
         let mut stmt = self.conn.prepare(
-            "SELECT p.id, p.title, snippet(pages_fts, 2, '<mark>', '</mark>', '...', 32) as snippet, p.icon, p.updated_at
+            "SELECT p.id, p.title, snippet(pages_fts, 2, ?2, ?3, '...', 32) as snippet, p.icon, p.updated_at
              FROM pages_fts
              JOIN pages p ON p.id = pages_fts.page_id
              WHERE pages_fts MATCH ?1 AND p.deleted_at IS NULL
              ORDER BY rank
-             LIMIT ?2"
+             LIMIT ?4"
         )?;
-        let results = stmt.query_map(params![fts_query, limit], |row| {
-            Ok(SearchResult {
-                id: row.get(0)?,
-                title: row.get(1)?,
-                snippet: row.get(2)?,
-                icon: row.get(3)?,
-                updated_at: row.get(4)?,
-            })
-        })?;
+        let results = stmt.query_map(
+            params![
+                fts_query,
+                SEARCH_HIGHLIGHT_START,
+                SEARCH_HIGHLIGHT_END,
+                limit
+            ],
+            |row| {
+                let snippet: String = row.get(2)?;
+                Ok(SearchResult {
+                    id: row.get(0)?,
+                    title: row.get(1)?,
+                    snippet: sanitize_search_snippet(&snippet),
+                    icon: row.get(3)?,
+                    updated_at: row.get(4)?,
+                })
+            },
+        )?;
         let mut result = Vec::new();
         for r in results {
             result.push(r?);
@@ -1699,22 +1815,26 @@ impl Database {
             return Ok(Vec::new());
         }
         let mut stmt = self.conn.prepare(
-            "SELECT p.id, p.title, snippet(pages_fts, 1, '<mark>', '</mark>', '...', 20) as snippet, p.icon, p.updated_at
+            "SELECT p.id, p.title, snippet(pages_fts, 2, ?2, ?3, '...', 20) as snippet, p.icon, p.updated_at
              FROM pages_fts
-             JOIN pages p ON p.id = pages_fts.rowid
+             JOIN pages p ON p.id = pages_fts.page_id
              WHERE pages_fts MATCH ?1 AND p.deleted_at IS NULL
              ORDER BY rank
              LIMIT 50",
         )?;
-        let rows = stmt.query_map(params![fts_query], |row| {
-            Ok(SearchResult {
-                id: row.get(0)?,
-                title: row.get(1)?,
-                snippet: row.get(2)?,
-                icon: row.get(3)?,
-                updated_at: row.get(4)?,
-            })
-        })?;
+        let rows = stmt.query_map(
+            params![fts_query, SEARCH_HIGHLIGHT_START, SEARCH_HIGHLIGHT_END],
+            |row| {
+                let snippet: String = row.get(2)?;
+                Ok(SearchResult {
+                    id: row.get(0)?,
+                    title: row.get(1)?,
+                    snippet: sanitize_search_snippet(&snippet),
+                    icon: row.get(3)?,
+                    updated_at: row.get(4)?,
+                })
+            },
+        )?;
         let mut results = Vec::new();
         for r in rows {
             results.push(r?);
@@ -2369,6 +2489,13 @@ impl Database {
     // ── Attachments ──
 
     pub fn create_attachment(&self, input: &CreateAttachmentInput) -> Result<Attachment, DbError> {
+        if input.data.len() > MAX_ATTACHMENT_BYTES {
+            return Err(DbError::InvalidInput(format!(
+                "attachment exceeds {} MB limit",
+                MAX_ATTACHMENT_BYTES / 1024 / 1024
+            )));
+        }
+
         let id = uuid::Uuid::new_v4().to_string();
         let now = chrono::Utc::now().to_rfc3339();
         let is_image = input.mime_type.starts_with("image/");
@@ -2740,6 +2867,27 @@ fn format_fts_query(query: &str) -> String {
         .join(" ")
 }
 
+fn sanitize_search_snippet(snippet: &str) -> String {
+    escape_html(snippet)
+        .replace(SEARCH_HIGHLIGHT_START, "<mark>")
+        .replace(SEARCH_HIGHLIGHT_END, "</mark>")
+}
+
+fn escape_html(value: &str) -> String {
+    let mut escaped = String::with_capacity(value.len());
+    for ch in value.chars() {
+        match ch {
+            '&' => escaped.push_str("&amp;"),
+            '<' => escaped.push_str("&lt;"),
+            '>' => escaped.push_str("&gt;"),
+            '"' => escaped.push_str("&quot;"),
+            '\'' => escaped.push_str("&#39;"),
+            _ => escaped.push(ch),
+        }
+    }
+    escaped
+}
+
 fn extract_wiki_links(content: &str) -> Vec<String> {
     let mut links = Vec::new();
     let mut chars = content.chars().peekable();
@@ -2987,26 +3135,80 @@ mod tests {
     }
 
     #[test]
+    fn test_move_page_rejects_self_and_descendant_parent() {
+        let db = test_db();
+        let parent = db
+            .create_page(&CreatePageInput {
+                parent_id: None,
+                title: "Parent".to_string(),
+                content: None,
+                icon: None,
+            })
+            .unwrap();
+        let child = db
+            .create_page(&CreatePageInput {
+                parent_id: Some(parent.id.clone()),
+                title: "Child".to_string(),
+                content: None,
+                icon: None,
+            })
+            .unwrap();
+
+        let self_move = db.move_page(&MovePageInput {
+            id: parent.id.clone(),
+            parent_id: Some(parent.id.clone()),
+            sort_order: 1,
+        });
+        assert!(matches!(self_move, Err(DbError::InvalidInput(_))));
+
+        let descendant_move = db.move_page(&MovePageInput {
+            id: parent.id.clone(),
+            parent_id: Some(child.id),
+            sort_order: 1,
+        });
+        assert!(matches!(descendant_move, Err(DbError::InvalidInput(_))));
+    }
+
+    #[test]
+    fn test_create_attachment_rejects_oversized_blob() {
+        let db = test_db();
+        let page = db
+            .create_page(&CreatePageInput {
+                parent_id: None,
+                title: "Attachment Parent".to_string(),
+                content: None,
+                icon: None,
+            })
+            .unwrap();
+
+        let result = db.create_attachment(&CreateAttachmentInput {
+            page_id: page.id,
+            file_name: "too-large.bin".to_string(),
+            mime_type: "application/octet-stream".to_string(),
+            data: vec![0; MAX_ATTACHMENT_BYTES + 1],
+        });
+
+        assert!(matches!(result, Err(DbError::InvalidInput(_))));
+    }
+
+    #[test]
     fn test_search() {
         let db = test_db();
         db.create_page(&CreatePageInput {
             parent_id: None,
             title: "Searchable Note".to_string(),
             content: Some(
-                r#"{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"unique content here"}]}]}"#
+                r#"{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"unique content with <img src=x onerror=alert(1)> here"}]}]}"#
                     .to_string(),
             ),
             icon: None,
         })
         .unwrap();
 
-        // FTS5 contentless tables may not work in-memory in all configurations.
-        // Verify the search function doesn't error — results may be empty in test env.
-        let results = db.search_pages("Searchable", 10);
-        assert!(
-            results.is_ok(),
-            "search_pages should not error: {:?}",
-            results.err()
-        );
+        let results = db.search_pages("unique", 10).unwrap();
+        assert_eq!(results.len(), 1);
+        assert!(results[0].snippet.contains("<mark>unique</mark>"));
+        assert!(!results[0].snippet.contains("<img"));
+        assert!(results[0].snippet.contains("&lt;img"));
     }
 }

@@ -17,6 +17,11 @@ A sorted guide to public docs, runbooks, and references for 900Notes.
 - [Editor Schema](EDITOR.md) — ProseMirror schema, block types, marks, wiki links
 - [i18n Guide](I18N.md) — add languages, locale formatting, RTL support
 - [Quality Gate](QUALITY_GATE.md) — required pre-merge validation baseline
+- [Threat Model](THREAT_MODEL.md) — security boundaries, mitigations, and residual risk
+- [Privacy Model](PRIVACY_MODEL.md) — data inventory and data-flow rules
+- [Plugin System](PLUGINS.md) — local plugin format and security notes
+- [Mobile Companion](MOBILE.md) — read-only mobile build architecture and CSP
+- [Maintainer Handoff](MAINTAINER_HANDOFF.md) — post-audit remediation summary and review checklist
 
 ## Governance
 
@@ -30,7 +35,4 @@ A sorted guide to public docs, runbooks, and references for 900Notes.
 - Deployment Guide — platform builds, data locations, distribution
 - Release Runbook — tagged release flow, artifacts, checksums
 - Public Release Checklist — repository visibility, privacy, documentation readiness
-- Threat Model — formal threat model (Sprint 15)
-- Privacy Model — formal privacy model (Sprint 15)
-- Plugin API — plugin development guide (Sprint 19)
 - Sync Protocol — CRDT sync protocol specification (Sprint 12)
