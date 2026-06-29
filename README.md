@@ -1,22 +1,16 @@
 # 900Notes
 
-Knowledge base and note-taking with bidirectional linking. Your second brain, fully owned.
+A note-taking app that actually works offline. Your notes stay on your computer. No subscriptions, no cloud, no account required.
 
-Free. Offline. Yours.
+Free. Forever.
 
-Website • Features • Installation • Documentation • Contributing
+## Why This Exists
 
-## The Problem
+Notion costs $10/month. Evernote keeps raising prices. Obsidian is great but sync costs money. If you're a student in Lagos, a researcher in Nairobi, or a small team in Accra, these tools are priced for San Francisco salaries, not for the rest of the world.
 
-A student in Lagos can't afford Notion's $10/month subscription. A researcher in Nairobi loses access to their notes when the internet drops. A small team in Accra has no way to build a shared knowledge base without sending their data to servers they don't control. Every existing note-taking tool either requires a subscription, a constant internet connection, or both.
+900Notes is our answer. It runs on whatever laptop you already have. It doesn't need the internet. Your data lives in a single file on your machine, and you can move it or back it up whenever you want.
 
-Knowledge workers in developing economies are locked out of the tools that make modern knowledge work possible. Their ideas, research, and institutional memory are trapped in scattered documents and lost notebooks — not because they lack the skills, but because the tools are priced for San Francisco, not for where the majority of the world actually lives and works.
-
-## The Solution
-
-900Notes is a desktop knowledge base that works completely offline. It runs on the hardware you already own. No subscriptions. No cloud dependencies. No internet required after the first download.
-
-Built by [900 Labs](https://www.900labs.com) — building enterprise-grade open source tools for the 900 million+ people in developing economies who are priced out of the software that modern businesses depend on.
+Built by [900 Labs](https://www.900labs.com). We make open source tools for people who get priced out of the software they need to do their work.
 
 ## Features
 
@@ -115,12 +109,12 @@ Built by [900 Labs](https://www.900labs.com) — building enterprise-grade open 
 
 ### Why Tauri v2?
 
-Tauri uses the system's native webview instead of bundling Chromium. The result: smaller binaries, lower memory usage, and faster startup. On a 4-year-old laptop with 4 GB of RAM running three browser tabs, this difference is everything.
+Tauri uses your system's built-in webview instead of shipping a full copy of Chromium. That means the app is smaller, uses less memory, and starts faster. If you're running this on a 4-year-old laptop with 4GB RAM, you'll feel the difference.
 
 ## Installation
 
 ### Releases
-Tagged releases are published on the [releases page](https://github.com/900Labs/900Notes/releases/latest) when available. Until platform binaries are published, build from source.
+Tagged releases are on the [releases page](https://github.com/900Labs/900Notes/releases/latest) when available. Until we publish pre-built binaries, you can build from source.
 
 ### Build from Source
 Prerequisites:
@@ -180,27 +174,27 @@ Production app bundles and installers are written under `src-tauri/target/releas
 
 ## Data Storage
 
-All data is stored locally in a single SQLite file. No cloud. No server.
+Everything lives in one SQLite file on your computer. No cloud, no server, no middleman.
 - Location: `{APP_DATA_DIR}/900notes.db`
-- IDs: UUID v4 for offline-safe creation
-- Full-text search: SQLite FTS5 virtual table
+- IDs: UUID v4 so you can create notes offline without conflicts
+- Full-text search built on SQLite FTS5
 
-Your data never leaves your machine unless you explicitly export it.
+Your data doesn't leave your machine unless you choose to export it.
 
 ## Documentation
 
-- [Architecture Overview](docs/ARCHITECTURE.md) — system design, data flow, and offline model
-- [Threat Model](docs/THREAT_MODEL.md) — security boundaries, mitigations, and residual risks
-- [Privacy Model](docs/PRIVACY_MODEL.md) — data inventory and data-flow rules
-- [Plugin System](docs/PLUGINS.md) — local plugin format, security notes, and examples
-- [Mobile Companion](docs/MOBILE.md) — read-only mobile build architecture and CSP
-- [Roadmap](docs/ROADMAP.md) — MVP scope and post-MVP phases
-- [Quality Gate](docs/QUALITY_GATE.md) — required pre-merge validation baseline
-- [Maintainer Handoff](docs/MAINTAINER_HANDOFF.md) — post-audit remediation summary and review checklist
+- [Architecture Overview](docs/ARCHITECTURE.md) - system design, data flow, and offline model
+- [Threat Model](docs/THREAT_MODEL.md) - security boundaries, mitigations, and residual risks
+- [Privacy Model](docs/PRIVACY_MODEL.md) - data inventory and data-flow rules
+- [Plugin System](docs/PLUGINS.md) - local plugin format, security notes, and examples
+- [Mobile Companion](docs/MOBILE.md) - read-only mobile build architecture and CSP
+- [Roadmap](docs/ROADMAP.md) - MVP scope and post-MVP phases
+- [Quality Gate](docs/QUALITY_GATE.md) - required pre-merge validation baseline
+- [Maintainer Handoff](docs/MAINTAINER_HANDOFF.md) - post-audit remediation summary and review checklist
 
 ## Contributing
 
-We welcome contributions from developers worldwide — especially those in the regions 900Notes serves. Every line of code from a developer in Lagos, Nairobi, Accra, or Mumbai makes this tool better for the people it's built for.
+We welcome contributions from anyone, especially developers in the places this tool is built for. If you're coding from Lagos, Nairobi, Accra, or Mumbai, your contributions make this better for everyone who uses it.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, coding standards, and the PR process.
 
@@ -212,8 +206,8 @@ Quick contribution ideas:
 
 ## License
 
-Apache License 2.0 — see [LICENSE](LICENSE) for details.
-You are free to use, modify, and distribute this software — including commercially. You do not owe us anything.
+Apache License 2.0. See [LICENSE](LICENSE) for the full text.
+You can use, modify, and distribute this software, including for commercial purposes. You don't owe us anything.
 
 ## Security
 
@@ -228,6 +222,6 @@ To report a vulnerability, email security@900labs.com. See [SECURITY.md](SECURIT
 - [900Invoice](https://github.com/900Labs/900Invoice)
 - [900Word](https://github.com/900Labs/900Word)
 
-All tools are built on the same Tauri v2 + Rust + Svelte 5 stack. They share conventions, libraries, and the same commitment: free forever, offline-first, open source.
+All of our tools run on the same Tauri v2 + Rust + Svelte 5 stack. Same conventions, same libraries, same promise: free forever, works offline, open source.
 
 Learn more at [900labs.com/open-source](https://www.900labs.com/open-source).
