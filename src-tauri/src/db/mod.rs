@@ -2457,7 +2457,7 @@ impl Database {
             .into_iter()
             .map(|(pid, (score, reasons))| (pid, score, reasons))
             .collect();
-        sorted.sort_by(|a, b| b.1.cmp(&a.1));
+        sorted.sort_by_key(|item| std::cmp::Reverse(item.1));
         sorted.truncate(limit as usize);
 
         // Fetch page details and filter out deleted pages
