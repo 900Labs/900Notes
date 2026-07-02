@@ -309,11 +309,11 @@
       History
     </button>
     <button
-      onclick={() => onAppAction('toggleGraph')}
+      onclick={() => onAppAction('openLocalGraph')}
       class="text-xs px-2.5 py-1 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-      title={$t('command.toggleGraph')}
+      title={$t('command.openLocalGraph')}
     >
-      Graph
+      {$t('command.openLocalGraph')}
     </button>
     <div class="w-px h-5 bg-gray-200 dark:bg-gray-800 mx-1"></div>
     <button
