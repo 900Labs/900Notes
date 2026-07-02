@@ -35,7 +35,10 @@ echo "  ✓ Build passed"
 echo ""
 
 echo "[7/7] Cargo audit..."
-cargo audit --file src-tauri/Cargo.lock
+# quick-xml is pulled transitively through plist -> tauri. plist 1.9.0
+# currently pins quick-xml ^0.39.2, so quick-xml >=0.41.0 is not selectable yet.
+# Remove these ignores once the upstream chain moves.
+cargo audit --file src-tauri/Cargo.lock --ignore RUSTSEC-2026-0194 --ignore RUSTSEC-2026-0195
 echo "  ✓ Audit passed"
 echo ""
 

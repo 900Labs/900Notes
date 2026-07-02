@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '../i18n'
   import type { Page } from '../lib/types'
 
   type MenuItem = {
@@ -24,6 +25,7 @@
       label: 'Create',
       items: [
         { label: 'New page', action: 'newPage', shortcut: 'Cmd+N' },
+        { label: $t('command.quickCapture'), action: 'openQuickCapture', shortcut: 'Cmd+Shift+C' },
         { label: 'Today', action: 'dailyNote' },
         { label: 'From template', action: 'newFromTemplate' },
       ],
@@ -33,6 +35,7 @@
       label: 'Navigate',
       items: [
         { label: 'Command palette', action: 'openCommandPalette', shortcut: 'Cmd+K' },
+        { label: $t('command.quickCapture'), action: 'openQuickCapture', shortcut: 'Cmd+Shift+C' },
         { label: 'Favorites', action: 'toggleFavorites' },
         { label: 'Recent pages', action: 'openRecent' },
         { label: 'Smart folders', action: 'toggleSmartFolders' },
@@ -43,6 +46,7 @@
       label: 'View',
       items: [
         { label: 'Knowledge graph', action: 'toggleGraph' },
+        { label: $t('command.openLocalGraph'), action: 'openLocalGraph', disabled: !currentPage },
         { label: 'Outline', action: 'toggleOutline', disabled: !currentPage },
         { label: 'Backlinks', action: 'toggleBacklinks', disabled: !currentPage },
         { label: 'Related pages', action: 'toggleRelated', disabled: !currentPage },

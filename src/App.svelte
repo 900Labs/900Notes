@@ -6,6 +6,7 @@
   import EditorView from './components/editor/EditorView.svelte'
   import CommandPalette from './components/search/CommandPalette.svelte'
   import TemplatePicker from './components/search/TemplatePicker.svelte'
+  import QuickCaptureModal from './components/QuickCaptureModal.svelte'
   import SettingsModal from './components/settings/SettingsModal.svelte'
   import BacklinksPanel from './components/backlinks/BacklinksPanel.svelte'
   import OutlinePanel from './components/editor/OutlinePanel.svelte'
@@ -18,10 +19,12 @@
 
   let showCommandPalette = $state(false)
   let showTemplatePicker = $state(false)
+  let showQuickCapture = $state(false)
   let showSettings = $state(false)
   let showBacklinks = $state(true)
   let showOutline = $state(false)
   let showGraph = $state(false)
+  let graphFocusPageId = $state<string | null>(null)
   let showHistory = $state(false)
   let showRelated = $state(false)
   let settingsSection = $state<'appearance' | 'language' | 'data' | 'sync' | 'sharing' | 'workspaces' | 'security' | 'plugins' | 'about'>('appearance')
@@ -49,6 +52,10 @@
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'n') {
         e.preventDefault()
         handleCommandAction('newPage')
+      }
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'c') {
+        e.preventDefault()
+        handleCommandAction('openQuickCapture')
       }
       if (e.key === 'Escape') {
         showCommandPalette = false
@@ -109,10 +116,75 @@
     showSettings = true
   }
 
+  function prosemirrorFromText(body: string): string {
+    const paragraphs = body
+      .split(/\n{2,}/)
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .map((part) => ({
+        type: 'paragraph',
+        content: [{ type: 'text', text: part.replace(/\n/g, ' ') }],
+      }))
+
+    return JSON.stringify({
+      type: 'doc',
+      content: paragraphs.length > 0 ? paragraphs : [{ type: 'paragraph' }],
+    })
+  }
+
+  function findPageByTitle(nodes: import('./lib/types').PageTreeNodeMeta[], title: string): string | null {
+    for (const node of nodes) {
+      if (node.page.title.toLowerCase() === title.toLowerCase()) return node.page.id
+      const childMatch = findPageByTitle(node.children, title)
+      if (childMatch) return childMatch
+    }
+    return null
+  }
+
+  async function ensureInboxPage(): Promise<string> {
+    const existing = findPageByTitle(pageStore.pageTree, 'Inbox')
+    if (existing) return existing
+    const inbox = await api.createPage({
+      parentId: null,
+      title: 'Inbox',
+      icon: 'IN',
+      content: prosemirrorFromText('Captured notes and incoming material.'),
+    })
+    await pageStore.loadPageTree()
+    return inbox.id
+  }
+
+  async function handleQuickCapture(input: { title: string; body: string; tags: string[]; useInbox: boolean }) {
+    const parentId = input.useInbox ? await ensureInboxPage() : null
+    const page = await api.createPage({
+      parentId,
+      title: input.title,
+      icon: 'IN',
+      content: prosemirrorFromText(input.body),
+    })
+
+    const tagIds: string[] = []
+    for (const tagName of input.tags) {
+      const existing = tagStore.tags.find((tag) => tag.name.toLowerCase() === tagName.toLowerCase())
+      const tag = existing ?? await tagStore.createTag(tagName)
+      tagIds.push(tag.id)
+    }
+    if (tagIds.length > 0) {
+      await tagStore.setPageTags(page.id, tagIds)
+    }
+
+    await pageStore.loadPageTree()
+    await pageStore.loadRecentPages()
+    await handlePageCreated(page.id)
+  }
+
   async function handleCommandAction(action: string) {
     switch (action) {
       case 'openCommandPalette':
         showCommandPalette = true
+        break
+      case 'openQuickCapture':
+        showQuickCapture = true
         break
       case 'newPage': {
         const page = await pageStore.createPage('Untitled', null)
@@ -166,7 +238,18 @@
         showOutline = !showOutline
         break
       case 'toggleGraph':
+        graphFocusPageId = null
         showGraph = !showGraph
+        break
+      case 'openLocalGraph':
+        if (pageStore.currentPage) {
+          graphFocusPageId = pageStore.currentPage.id
+          showGraph = true
+        }
+        break
+      case 'closeGraph':
+        showGraph = !showGraph
+        graphFocusPageId = null
         break
       case 'toggleSmartFolders':
         settingsStore.sidebarTab = 'smart'
@@ -283,7 +366,11 @@
     <AppMenuBar currentPage={pageStore.currentPage} onAction={handleCommandAction} />
 
     {#if showGraph}
-      <GraphView onNavigate={(id) => { showGraph = false; handlePageSelect(id) }} />
+      <GraphView
+        focusPageId={graphFocusPageId}
+        onNavigate={(id: string) => { showGraph = false; graphFocusPageId = null; handlePageSelect(id) }}
+        onClose={() => { showGraph = false; graphFocusPageId = null }}
+      />
     {:else if pageStore.currentPage}
       <EditorView
         page={pageStore.currentPage}
@@ -339,6 +426,13 @@
   <TemplatePicker
     onSelect={handleTemplateSelect}
     onClose={() => (showTemplatePicker = false)}
+  />
+{/if}
+
+{#if showQuickCapture}
+  <QuickCaptureModal
+    onClose={() => (showQuickCapture = false)}
+    onCapture={handleQuickCapture}
   />
 {/if}
 

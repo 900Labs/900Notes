@@ -21,6 +21,7 @@ A sorted guide to public docs, runbooks, and references for 900Notes.
 - [Privacy Model](PRIVACY_MODEL.md) — data inventory and data-flow rules
 - [Plugin System](PLUGINS.md) — local plugin format and security notes
 - [Mobile Companion](MOBILE.md) — read-only mobile build architecture and CSP
+- [Functionality Benchmark](FUNCTIONALITY_BENCHMARK.md) — comparison against adjacent note apps and current product gaps
 - [Maintainer Handoff](MAINTAINER_HANDOFF.md) — post-audit remediation summary and review checklist
 
 ## Governance
