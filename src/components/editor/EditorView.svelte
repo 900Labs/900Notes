@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte'
   import type { Page } from '../../lib/types'
-  import { pageStore, tagStore, attachmentStore } from '../../stores/app.svelte'
+  import { pageStore, tagStore, attachmentStore, historyStore } from '../../stores/app.svelte'
   import { t } from '../../i18n'
   import * as editorLib from '../../lib/editor'
   import * as api from '../../lib/api'
@@ -15,10 +15,12 @@
   let {
     page,
     onNavigate,
+    onAppAction = () => {},
     showOutline = false,
   }: {
     page: Page
     onNavigate: (pageId: string) => void
+    onAppAction?: (action: string) => void
     showOutline?: boolean
   } = $props()
 
@@ -36,12 +38,17 @@
   let toast = $state<{ msg: string; type: 'success' | 'error' } | null>(null)
   let recording = $state(false)
   let recordDuration = $state(0)
+  let isFavorite = $state(false)
 
   let pageTitles = $state<{ id: string; title: string }[]>([])
 
   async function loadPageTitles() {
     const titles = await api.getPageTitles()
     pageTitles = titles.map(([id, title]) => ({ id, title }))
+  }
+
+  async function loadFavoriteState() {
+    isFavorite = await historyStore.checkFavorite(page.id)
   }
 
   function debounceSave(content: string) {
@@ -166,8 +173,19 @@
     }
   }
 
+  async function handleToggleFavorite() {
+    if (isFavorite) {
+      await historyStore.removeFavorite(page.id)
+      isFavorite = false
+    } else {
+      await historyStore.addFavorite(page.id)
+      isFavorite = true
+    }
+  }
+
   onMount(async () => {
     await loadPageTitles()
+    await loadFavoriteState()
 
     pmView = editorLib.createEditor(editorElement, page.content, {
       onChange: (content) => debounceSave(content),
@@ -205,6 +223,7 @@
         getPageTitles: () => pageTitles,
         getPageId: () => page.id,
       })
+      loadFavoriteState()
     }
   })
 
@@ -253,7 +272,57 @@
   <EditorToolbar onAction={handleToolbarAction} />
 
   <!-- Page Actions Bar -->
-  <div class="flex items-center gap-2 px-12 py-1.5 max-w-3xl mx-auto w-full border-b border-gray-100 dark:border-gray-800/50">
+  <div class="flex items-center gap-1.5 px-12 py-1.5 max-w-3xl mx-auto w-full border-b border-gray-100 dark:border-gray-800/50 flex-wrap">
+    <button
+      onclick={handleToggleFavorite}
+      class="text-xs px-2.5 py-1 rounded-md {isFavorite ? 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'} transition-colors"
+      title={isFavorite ? $t('favorites.remove') : $t('favorites.add')}
+    >
+      {isFavorite ? 'Favorited' : 'Favorite'}
+    </button>
+    <button
+      onclick={() => onAppAction('toggleOutline')}
+      class="text-xs px-2.5 py-1 rounded-md {showOutline ? 'text-accent bg-accent/10' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'} transition-colors"
+      title={$t('command.toggleOutline')}
+    >
+      Outline
+    </button>
+    <button
+      onclick={() => onAppAction('toggleBacklinks')}
+      class="text-xs px-2.5 py-1 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+      title={$t('command.toggleBacklinks')}
+    >
+      Backlinks
+    </button>
+    <button
+      onclick={() => onAppAction('toggleRelated')}
+      class="text-xs px-2.5 py-1 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+      title={$t('command.toggleRelated')}
+    >
+      Related
+    </button>
+    <button
+      onclick={() => onAppAction('toggleHistory')}
+      class="text-xs px-2.5 py-1 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+      title={$t('command.toggleHistory')}
+    >
+      History
+    </button>
+    <button
+      onclick={() => onAppAction('toggleGraph')}
+      class="text-xs px-2.5 py-1 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+      title={$t('command.toggleGraph')}
+    >
+      Graph
+    </button>
+    <div class="w-px h-5 bg-gray-200 dark:bg-gray-800 mx-1"></div>
+    <button
+      onclick={() => onAppAction('exportMarkdown')}
+      class="text-xs px-2.5 py-1 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+      title={$t('command.exportMarkdown')}
+    >
+      Markdown
+    </button>
     <button
       onclick={handleExportPdf}
       disabled={exporting}

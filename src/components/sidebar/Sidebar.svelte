@@ -5,7 +5,7 @@
   import { pageStore, tagStore, settingsStore, searchStore, historyStore } from '../../stores/app.svelte'
   import { t } from '../../i18n'
   import * as api from '../../lib/api'
-  import type { SearchResult, SmartFolderRule } from '../../lib/types'
+  import type { PageMetadata, PageTreeNodeMeta, SearchResult, SmartFolderRule } from '../../lib/types'
 
   let {
     onPageSelect,
@@ -48,6 +48,28 @@
 
   async function handleDeletePage(id: string) {
     await pageStore.deletePage(id)
+  }
+
+  async function handleDuplicatePage(id: string) {
+    const page = await pageStore.duplicatePage(id)
+    onPageCreated(page.id)
+  }
+
+  async function handleToggleFavorite(pageId: string) {
+    if (historyStore.currentFavoriteIds.has(pageId)) {
+      await historyStore.removeFavorite(pageId)
+    } else {
+      await historyStore.addFavorite(pageId)
+    }
+  }
+
+  function findPageMeta(nodes: PageTreeNodeMeta[], pageId: string): PageMetadata | null {
+    for (const node of nodes) {
+      if (node.page.id === pageId) return node.page
+      const found = findPageMeta(node.children, pageId)
+      if (found) return found
+    }
+    return null
   }
 
   async function handleTagFilter(tagId: string | null) {
@@ -102,6 +124,10 @@
   async function handleFavoriteDragReorder(orderedPageIds: string[]) {
     await historyStore.reorderFavorites(orderedPageIds)
   }
+
+  onMount(() => {
+    historyStore.loadFavorites()
+  })
 </script>
 
 {#if !collapsed}
@@ -134,32 +160,32 @@
       </button>
     </div>
 
-    <!-- Tabs - scrollable to prevent overflow -->
-    <div class="flex overflow-x-auto border-b border-gray-200 dark:border-gray-800 px-2 scrollbar-none" style="scrollbar-width: none;">
+    <!-- Workspace navigation -->
+    <div class="grid grid-cols-2 gap-1 border-b border-gray-200 dark:border-gray-800 p-2">
       <button
         onclick={() => (settingsStore.sidebarTab = 'pages')}
-        class="px-2.5 py-2 text-xs font-medium whitespace-nowrap {activeTab === 'pages' ? 'text-accent border-b-2 border-accent' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}"
-      >{$t('sidebar.pages')}</button>
+        class="px-2 py-1.5 rounded-md text-xs font-medium text-left {activeTab === 'pages' ? 'bg-accent/10 text-accent' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'}"
+      >Pages</button>
       <button
         onclick={() => (settingsStore.sidebarTab = 'tags')}
-        class="px-2.5 py-2 text-xs font-medium whitespace-nowrap {activeTab === 'tags' ? 'text-accent border-b-2 border-accent' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}"
-      >{$t('sidebar.tags')}</button>
+        class="px-2 py-1.5 rounded-md text-xs font-medium text-left {activeTab === 'tags' ? 'bg-accent/10 text-accent' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'}"
+      >Tags</button>
       <button
         onclick={() => (settingsStore.sidebarTab = 'recent')}
-        class="px-2.5 py-2 text-xs font-medium whitespace-nowrap {activeTab === 'recent' ? 'text-accent border-b-2 border-accent' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}"
-      >{$t('sidebar.recent')}</button>
+        class="px-2 py-1.5 rounded-md text-xs font-medium text-left {activeTab === 'recent' ? 'bg-accent/10 text-accent' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'}"
+      >Recent</button>
       <button
         onclick={() => { settingsStore.sidebarTab = 'trash'; pageStore.loadTrash() }}
-        class="px-2.5 py-2 text-xs font-medium whitespace-nowrap {activeTab === 'trash' ? 'text-accent border-b-2 border-accent' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}"
-      >{$t('sidebar.trash')}</button>
+        class="px-2 py-1.5 rounded-md text-xs font-medium text-left {activeTab === 'trash' ? 'bg-accent/10 text-accent' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'}"
+      >Trash</button>
       <button
         onclick={() => { settingsStore.sidebarTab = 'smart'; searchStore.loadSavedSearches(); searchStore.loadSmartFolders() }}
-        class="px-2.5 py-2 text-xs font-medium whitespace-nowrap {activeTab === 'smart' ? 'text-accent border-b-2 border-accent' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}"
-      >{$t('smartFolder.title')}</button>
+        class="px-2 py-1.5 rounded-md text-xs font-medium text-left {activeTab === 'smart' ? 'bg-accent/10 text-accent' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'}"
+      >Smart</button>
       <button
         onclick={() => { settingsStore.sidebarTab = 'favorites'; historyStore.loadFavorites() }}
-        class="px-2.5 py-2 text-xs font-medium whitespace-nowrap {activeTab === 'favorites' ? 'text-accent border-b-2 border-accent' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}"
-      >{$t('favorites.title')}</button>
+        class="px-2 py-1.5 rounded-md text-xs font-medium text-left {activeTab === 'favorites' ? 'bg-accent/10 text-accent' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'}"
+      >Favorites</button>
     </div>
 
     <!-- Content -->
@@ -170,7 +196,10 @@
           onSelectPage={handleSelectPage}
           onNewPage={handleNewPage}
           onDeletePage={handleDeletePage}
+          onDuplicatePage={handleDuplicatePage}
+          onToggleFavorite={handleToggleFavorite}
           currentPageId={pageStore.currentPage?.id}
+          favoriteIds={historyStore.currentFavoriteIds}
         />
       {:else if activeTab === 'tags'}
         <TagList onFilter={handleTagFilter} activeFilter={settingsStore.activeTagFilter} />
@@ -353,13 +382,14 @@
       {:else if activeTab === 'favorites'}
         <div class="space-y-0.5">
           {#each historyStore.favorites as fav (fav.pageId)}
+            {@const page = findPageMeta(pageStore.pageTree, fav.pageId)}
             <div class="flex items-center group">
               <button
                 onclick={() => handleSelectPage(fav.pageId)}
                 class="flex-1 text-left px-2 py-1.5 rounded text-sm hover:bg-gray-200 dark:hover:bg-gray-700 truncate"
               >
-                <span class="mr-1">⭐</span>
-                {fav.pageId}
+                <span class="mr-1">{page?.icon || '*'}</span>
+                {page?.title || fav.pageId}
               </button>
               <button
                 onclick={() => handleRemoveFavorite(fav.pageId)}

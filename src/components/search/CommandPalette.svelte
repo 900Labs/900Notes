@@ -25,6 +25,9 @@
     label: string
     icon: string
     action: string
+    section: string
+    keywords: string
+    shortcut?: string
     type: 'command'
   }
 
@@ -44,25 +47,43 @@
   }
 
   let commands: CommandItem[] = $derived([
-    { id: 'cmd-new', label: $t('command.newPage'), icon: '+', action: 'newPage', type: 'command' },
-    { id: 'cmd-template', label: $t('command.newFromTemplate'), icon: '📋', action: 'newFromTemplate', type: 'command' },
-    { id: 'cmd-daily', label: $t('command.dailyNote'), icon: '📅', action: 'dailyNote', type: 'command' },
-    { id: 'cmd-theme', label: $t('command.toggleTheme'), icon: '◐', action: 'toggleTheme', type: 'command' },
-    { id: 'cmd-settings', label: $t('command.openSettings'), icon: '⚙', action: 'openSettings', type: 'command' },
-    { id: 'cmd-backlinks', label: $t('command.toggleBacklinks'), icon: '←', action: 'toggleBacklinks', type: 'command' },
-    { id: 'cmd-outline', label: $t('command.toggleOutline'), icon: '≡', action: 'toggleOutline', type: 'command' },
-    { id: 'cmd-graph', label: $t('command.toggleGraph'), icon: '◉', action: 'toggleGraph', type: 'command' },
-    { id: 'cmd-smart', label: $t('command.toggleSmartFolders'), icon: '📁', action: 'toggleSmartFolders', type: 'command' },
-    { id: 'cmd-favorites', label: $t('command.toggleFavorites'), icon: '⭐', action: 'toggleFavorites', type: 'command' },
-    { id: 'cmd-history', label: $t('command.toggleHistory'), icon: '🕐', action: 'toggleHistory', type: 'command' },
-    { id: 'cmd-related', label: $t('command.toggleRelated'), icon: '🔗', action: 'toggleRelated', type: 'command' },
-    { id: 'cmd-export', label: $t('command.exportMarkdown'), icon: '↓', action: 'exportMarkdown', type: 'command' },
-    { id: 'cmd-pdf-page', label: $t('pdf.exportPage'), icon: '📄', action: 'exportPagePdf', type: 'command' },
-    { id: 'cmd-pdf-workspace', label: $t('pdf.exportWorkspace'), icon: '📚', action: 'exportWorkspacePdf', type: 'command' },
+    { id: 'cmd-new', label: $t('command.newPage'), icon: '+', action: 'newPage', section: 'Create', keywords: 'blank note document', shortcut: 'Cmd+N', type: 'command' },
+    { id: 'cmd-template', label: $t('command.newFromTemplate'), icon: 'T', action: 'newFromTemplate', section: 'Create', keywords: 'template meeting project journal', type: 'command' },
+    { id: 'cmd-daily', label: $t('command.dailyNote'), icon: 'D', action: 'dailyNote', section: 'Create', keywords: 'today journal calendar', type: 'command' },
+    { id: 'cmd-theme', label: $t('command.toggleTheme'), icon: 'A', action: 'toggleTheme', section: 'View', keywords: 'appearance light dark', type: 'command' },
+    { id: 'cmd-backlinks', label: $t('command.toggleBacklinks'), icon: '<-', action: 'toggleBacklinks', section: 'View', keywords: 'links references mentions', type: 'command' },
+    { id: 'cmd-outline', label: $t('command.toggleOutline'), icon: '#', action: 'toggleOutline', section: 'View', keywords: 'headings table contents', type: 'command' },
+    { id: 'cmd-graph', label: $t('command.toggleGraph'), icon: 'G', action: 'toggleGraph', section: 'View', keywords: 'network map connections local graph', type: 'command' },
+    { id: 'cmd-smart', label: $t('command.toggleSmartFolders'), icon: 'F', action: 'toggleSmartFolders', section: 'Organize', keywords: 'saved search dynamic folders filters database', type: 'command' },
+    { id: 'cmd-favorites', label: $t('command.toggleFavorites'), icon: '*', action: 'toggleFavorites', section: 'Organize', keywords: 'star bookmarks pinned', type: 'command' },
+    { id: 'cmd-history', label: $t('command.toggleHistory'), icon: 'H', action: 'toggleHistory', section: 'Review', keywords: 'versions revisions restore', type: 'command' },
+    { id: 'cmd-related', label: $t('command.toggleRelated'), icon: 'R', action: 'toggleRelated', section: 'Review', keywords: 'similar discovery suggestions', type: 'command' },
+    { id: 'cmd-export', label: $t('command.exportMarkdown'), icon: 'MD', action: 'exportMarkdown', section: 'Export', keywords: 'download markdown', type: 'command' },
+    { id: 'cmd-pdf-page', label: $t('pdf.exportPage'), icon: 'PDF', action: 'exportPagePdf', section: 'Export', keywords: 'download pdf page', type: 'command' },
+    { id: 'cmd-pdf-workspace', label: $t('pdf.exportWorkspace'), icon: 'PDF', action: 'exportWorkspacePdf', section: 'Export', keywords: 'download pdf workspace', type: 'command' },
+    { id: 'cmd-data', label: 'Import and backup', icon: 'IO', action: 'openDataSettings', section: 'Tools', keywords: 'notion obsidian evernote roam import export backup', type: 'command' },
+    { id: 'cmd-sync', label: $t('sync.title'), icon: 'S', action: 'openSyncSettings', section: 'Tools', keywords: 'local network peer devices', type: 'command' },
+    { id: 'cmd-sharing', label: $t('sharing.title'), icon: 'SH', action: 'openSharingSettings', section: 'Tools', keywords: 'bundle html encrypted share publish', type: 'command' },
+    { id: 'cmd-workspaces', label: $t('workspaces.title'), icon: 'W', action: 'openWorkspacesSettings', section: 'Tools', keywords: 'profiles spaces databases', type: 'command' },
+    { id: 'cmd-security', label: $t('security.title'), icon: 'SEC', action: 'openSecuritySettings', section: 'Tools', keywords: 'encryption passphrase secure delete', type: 'command' },
+    { id: 'cmd-plugins', label: 'Plugins', icon: 'P', action: 'openPluginsSettings', section: 'Tools', keywords: 'extensions custom blocks themes', type: 'command' },
+    { id: 'cmd-settings', label: $t('command.openSettings'), icon: 'SET', action: 'openSettings', section: 'Tools', keywords: 'preferences configuration', type: 'command' },
   ])
 
   let filteredCommands = $derived(
-    commands.filter((c) => c.label.toLowerCase().includes(query.toLowerCase())),
+    commands.filter((c) => {
+      const q = query.toLowerCase()
+      return c.label.toLowerCase().includes(q)
+        || c.section.toLowerCase().includes(q)
+        || c.keywords.toLowerCase().includes(q)
+    }),
+  )
+
+  let commandSections = $derived(
+    Array.from(new Set(filteredCommands.map((c) => c.section))).map((section) => ({
+      section,
+      items: filteredCommands.filter((c) => c.section === section),
+    })),
   )
 
   let items = $derived<ListItem[]>([
@@ -191,18 +212,24 @@
       {:else}
         {#if filteredCommands.length > 0}
           <div class="py-1">
-            <div class="px-4 py-1 text-xs text-gray-400 font-medium">{$t('command.actions')}</div>
-            {#each filteredCommands as cmd, i (cmd.id)}
-              <button
-                onclick={() => selectItem(i)}
-                onmouseenter={() => (selected = i)}
-                class="w-full text-left px-4 py-2 {i === selected ? 'bg-accent/10' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}"
-              >
-                <div class="flex items-center gap-3">
-                  <span class="w-5 text-center text-gray-400 font-mono text-sm">{cmd.icon}</span>
-                  <span class="text-sm font-medium">{cmd.label}</span>
-                </div>
-              </button>
+            {#each commandSections as group}
+              <div class="px-4 py-1 text-xs text-gray-400 font-medium">{group.section}</div>
+              {#each group.items as cmd (cmd.id)}
+                {@const i = filteredCommands.findIndex((c) => c.id === cmd.id)}
+                <button
+                  onclick={() => selectItem(i)}
+                  onmouseenter={() => (selected = i)}
+                  class="w-full text-left px-4 py-2 {i === selected ? 'bg-accent/10' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}"
+                >
+                  <div class="flex items-center gap-3">
+                    <span class="w-8 text-center text-gray-400 font-mono text-xs">{cmd.icon}</span>
+                    <span class="min-w-0 flex-1 text-sm font-medium truncate">{cmd.label}</span>
+                    {#if cmd.shortcut}
+                      <kbd class="text-[10px] text-gray-400 border border-gray-300 dark:border-gray-600 rounded px-1.5 py-0.5">{cmd.shortcut}</kbd>
+                    {/if}
+                  </div>
+                </button>
+              {/each}
             {/each}
           </div>
         {/if}

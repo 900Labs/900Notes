@@ -1,8 +1,8 @@
+@import 'katex/dist/katex.min.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import 'katex/dist/katex.min.css';
 
 :root {
   font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
@@ -534,4 +534,3 @@ mark {
   white-space: nowrap;
   border: 0;
 }
-

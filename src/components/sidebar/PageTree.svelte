@@ -8,14 +8,20 @@
     onSelectPage,
     onNewPage,
     onDeletePage,
+    onDuplicatePage,
+    onToggleFavorite,
     currentPageId,
+    favoriteIds = new Set<string>(),
     depth = 0,
   }: {
     tree: PageTreeNodeMeta[]
     onSelectPage: (id: string) => void
     onNewPage: (parentId: string | null) => void
     onDeletePage: (id: string) => void
+    onDuplicatePage: (id: string) => void
+    onToggleFavorite: (id: string) => void
     currentPageId?: string
+    favoriteIds?: Set<string>
     depth?: number
   } = $props()
 
@@ -79,6 +85,18 @@
                 + {$t('sidebar.newPage')}
               </button>
               <button
+                onclick={() => { onDuplicatePage(node.page.id); menuOpen = null }}
+                class="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                {$t('editor.duplicate')}
+              </button>
+              <button
+                onclick={() => { onToggleFavorite(node.page.id); menuOpen = null }}
+                class="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                {favoriteIds.has(node.page.id) ? $t('favorites.remove') : $t('favorites.add')}
+              </button>
+              <button
                 onclick={() => { onDeletePage(node.page.id); menuOpen = null }}
                 class="w-full text-left px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
               >
@@ -95,7 +113,10 @@
           {onSelectPage}
           {onNewPage}
           {onDeletePage}
+          {onDuplicatePage}
+          {onToggleFavorite}
           {currentPageId}
+          {favoriteIds}
           depth={depth + 1}
         />
       {/if}

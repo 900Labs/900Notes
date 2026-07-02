@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte'
   import Sidebar from './components/sidebar/Sidebar.svelte'
+  import AppMenuBar from './components/AppMenuBar.svelte'
+  import HomeDashboard from './components/HomeDashboard.svelte'
   import EditorView from './components/editor/EditorView.svelte'
   import CommandPalette from './components/search/CommandPalette.svelte'
   import TemplatePicker from './components/search/TemplatePicker.svelte'
@@ -10,7 +12,7 @@
   import GraphView from './components/graph/GraphView.svelte'
   import HistoryPanel from './components/history/HistoryPanel.svelte'
   import RelatedPagesPanel from './components/discovery/RelatedPagesPanel.svelte'
-  import { pageStore, tagStore, backlinkStore, propertyStore, templateStore, settingsStore, historyStore, discoveryStore, encryptionStore } from './stores/app.svelte'
+  import { pageStore, tagStore, backlinkStore, propertyStore, templateStore, settingsStore, historyStore, discoveryStore, encryptionStore, attachmentStore } from './stores/app.svelte'
   import { t, locale, setLocale } from './i18n'
   import * as api from './lib/api'
 
@@ -22,27 +24,31 @@
   let showGraph = $state(false)
   let showHistory = $state(false)
   let showRelated = $state(false)
+  let settingsSection = $state<'appearance' | 'language' | 'data' | 'sync' | 'sharing' | 'workspaces' | 'security' | 'plugins' | 'about'>('appearance')
   let unlockPassphrase = $state('')
   let unlockError = $state<string | null>(null)
   let isUnlocking = $state(false)
 
   let savedCallback: ((e: KeyboardEvent) => void) | null = null
 
-  onMount(async () => {
-    await encryptionStore.checkStatus()
-    if (encryptionStore.enabled && !encryptionStore.unlocked) {
-      return
-    }
+  async function loadAppData() {
     await settingsStore.loadSettings()
     await pageStore.loadPageTree()
     await pageStore.loadRecentPages()
     await tagStore.loadTags()
     setLocale(settingsStore.language as any)
+  }
 
+  function installShortcuts() {
+    if (savedCallback) return
     savedCallback = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
         showCommandPalette = !showCommandPalette
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'n') {
+        e.preventDefault()
+        handleCommandAction('newPage')
       }
       if (e.key === 'Escape') {
         showCommandPalette = false
@@ -50,6 +56,15 @@
       }
     }
     window.addEventListener('keydown', savedCallback)
+  }
+
+  onMount(async () => {
+    await encryptionStore.checkStatus()
+    if (encryptionStore.enabled && !encryptionStore.unlocked) {
+      return
+    }
+    await loadAppData()
+    installShortcuts()
   })
 
   async function handleUnlock() {
@@ -59,11 +74,8 @@
       const result = await encryptionStore.unlock(unlockPassphrase)
       if (result) {
         unlockPassphrase = ''
-        await settingsStore.loadSettings()
-        await pageStore.loadPageTree()
-        await pageStore.loadRecentPages()
-        await tagStore.loadTags()
-        setLocale(settingsStore.language as any)
+        await loadAppData()
+        installShortcuts()
       } else {
         unlockError = 'Invalid passphrase'
       }
@@ -85,14 +97,23 @@
     await tagStore.loadPageTags(pageId)
     await backlinkStore.loadBacklinks(pageId)
     await propertyStore.loadProperties(pageId)
+    await attachmentStore.loadAttachments(pageId)
   }
 
   async function handlePageCreated(pageId: string) {
     await handlePageSelect(pageId)
   }
 
+  function openSettings(section: typeof settingsSection = 'appearance') {
+    settingsSection = section
+    showSettings = true
+  }
+
   async function handleCommandAction(action: string) {
     switch (action) {
+      case 'openCommandPalette':
+        showCommandPalette = true
+        break
       case 'newPage': {
         const page = await pageStore.createPage('Untitled', null)
         await handlePageCreated(page.id)
@@ -114,7 +135,29 @@
         break
       }
       case 'openSettings':
-        showSettings = true
+        openSettings('appearance')
+        break
+      case 'openDataSettings':
+        openSettings('data')
+        break
+      case 'openSyncSettings':
+        openSettings('sync')
+        break
+      case 'openSharingSettings':
+        openSettings('sharing')
+        break
+      case 'openWorkspacesSettings':
+        openSettings('workspaces')
+        break
+      case 'openSecuritySettings':
+        openSettings('security')
+        break
+      case 'openPluginsSettings':
+        openSettings('plugins')
+        break
+      case 'openRecent':
+        settingsStore.sidebarTab = 'recent'
+        pageStore.loadRecentPages()
         break
       case 'toggleBacklinks':
         showBacklinks = !showBacklinks
@@ -233,34 +276,28 @@
   <Sidebar
     onPageSelect={handlePageSelect}
     onPageCreated={handlePageCreated}
-    onOpenSettings={() => (showSettings = true)}
+    onOpenSettings={() => openSettings('appearance')}
   />
 
   <main id="main-content" class="flex-1 flex flex-col overflow-hidden min-w-0" aria-label="{$t('a11y.mainContent')}">
+    <AppMenuBar currentPage={pageStore.currentPage} onAction={handleCommandAction} />
+
     {#if showGraph}
       <GraphView onNavigate={(id) => { showGraph = false; handlePageSelect(id) }} />
     {:else if pageStore.currentPage}
       <EditorView
         page={pageStore.currentPage}
         onNavigate={handlePageSelect}
+        onAppAction={handleCommandAction}
         {showOutline}
       />
     {:else}
-      <div class="flex-1 flex items-center justify-center text-gray-400 dark:text-gray-600 bg-gray-50 dark:bg-gray-950">
-        <div class="text-center">
-          <svg class="w-16 h-16 mx-auto mb-4 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          <p class="text-lg font-medium text-gray-500 dark:text-gray-400">{$t('app.title')}</p>
-          <p class="text-sm mt-1 text-gray-400 dark:text-gray-600">{$t('app.tagline')}</p>
-          <button
-            onclick={() => handleCommandAction('newPage')}
-            class="mt-6 px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent-dark transition-colors"
-          >
-            {$t('sidebar.newPage')}
-          </button>
-        </div>
-      </div>
+      <HomeDashboard
+        pageTree={pageStore.pageTree}
+        recentPages={pageStore.recentPages}
+        onAction={handleCommandAction}
+        onPageSelect={handlePageSelect}
+      />
     {/if}
   </main>
 
@@ -306,6 +343,6 @@
 {/if}
 
 {#if showSettings}
-  <SettingsModal onClose={() => (showSettings = false)} />
+  <SettingsModal initialSection={settingsSection} onClose={() => (showSettings = false)} />
 {/if}
 {/if}

@@ -11,11 +11,15 @@
   let ctx: CanvasRenderingContext2D | null = null
   let rafId = 0
   let nodes = $state<(GraphNode & { x: number; y: number; vx: number; vy: number; r: number })[]>([])
-  let edges: GraphEdge[] = []
+  let edges = $state<GraphEdge[]>([])
   let nodeMap: Map<string, number> = new Map()
   let hoveredIdx = -1
-  let selectedTag = $state<string | null>(null)
   let minLinks = $state(0)
+  let showOrphans = $state(true)
+  let showLabels = $state(false)
+  let paused = $state(false)
+  let linkDistance = $state(120)
+  let repelForce = $state(800)
   let isDragging = false
   let dragIdx = -1
   let mouseX = 0
@@ -69,8 +73,21 @@
     canvas.width = width * window.devicePixelRatio
     canvas.height = height * window.devicePixelRatio
     if (ctx) {
-      ctx.scale(window.devicePixelRatio, window.devicePixelRatio)
+      ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0)
     }
+  }
+
+  function resetLayout() {
+    const cx = width / 2
+    const cy = height / 2
+    nodes = nodes.map((n) => ({
+      ...n,
+      x: cx + (Math.random() - 0.5) * Math.min(width, 500),
+      y: cy + (Math.random() - 0.5) * Math.min(height, 400),
+      vx: 0,
+      vy: 0,
+    }))
+    rebuildNodeMap()
   }
 
   function getFilteredNodes(): number[] {
@@ -78,6 +95,7 @@
       .map((_, i) => i)
       .filter((i) => {
         if (nodes[i].linkCount < minLinks) return false
+        if (!showOrphans && nodes[i].linkCount === 0) return false
         return true
       })
   }
@@ -91,7 +109,7 @@
     const cx = width / 2
     const cy = height / 2
     const k = 0.02
-    const repulsion = 800
+    const repulsion = Number(repelForce)
     const damping = 0.85
 
     for (let i = 0; i < nodes.length; i++) {
@@ -118,7 +136,7 @@
     }
 
     const linkSpring = 0.01
-    const linkLength = 120
+    const linkLength = Number(linkDistance)
     for (const edge of edges) {
       const si = nodeMap.get(edge.source)
       const ti = nodeMap.get(edge.target)
@@ -176,7 +194,7 @@
       ctx.fill()
       ctx.stroke()
 
-      if (isHovered || n.r > 12) {
+      if (showLabels || isHovered || n.r > 12) {
         ctx.fillStyle = isHovered ? '#1e293b' : '#64748b'
         ctx.font = '11px system-ui, sans-serif'
         ctx.textAlign = 'center'
@@ -187,7 +205,7 @@
 
   function animate() {
     if (!animationActive) return
-    simulate()
+    if (!paused) simulate()
     draw()
     rafId = requestAnimationFrame(animate)
   }
@@ -240,20 +258,64 @@
 </script>
 
 <div class="flex flex-col h-full">
-  <div class="flex items-center gap-3 px-4 py-2.5 border-b border-gray-200 dark:border-gray-700">
-    <h3 class="text-sm font-semibold">{$t('graph.title')}</h3>
+  <div class="flex flex-wrap items-center gap-3 px-4 py-2.5 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950">
+    <div>
+      <h3 class="text-sm font-semibold">{$t('graph.title')}</h3>
+      <p class="text-xs text-gray-500 dark:text-gray-400">{getFilteredNodes().length} pages, {edges.length} links</p>
+    </div>
     <div class="flex-1"></div>
     <label class="text-xs text-gray-500 flex items-center gap-1.5">
-  {$t('graph.minLinks')}
-  <input
-    type="range"
-    min="0"
-    max="10"
-    bind:value={minLinks}
-    class="w-20 accent-blue-500"
-  />
-  <span class="w-4 text-center">{minLinks}</span>
-</label>
+      {$t('graph.minLinks')}
+      <input
+        type="range"
+        min="0"
+        max="10"
+        bind:value={minLinks}
+        class="w-20 accent-blue-500"
+      />
+      <span class="w-4 text-center">{minLinks}</span>
+    </label>
+    <label class="text-xs text-gray-500 flex items-center gap-1.5">
+      Distance
+      <input
+        type="range"
+        min="60"
+        max="220"
+        bind:value={linkDistance}
+        class="w-20 accent-blue-500"
+      />
+    </label>
+    <label class="text-xs text-gray-500 flex items-center gap-1.5">
+      Repel
+      <input
+        type="range"
+        min="200"
+        max="1600"
+        step="100"
+        bind:value={repelForce}
+        class="w-20 accent-blue-500"
+      />
+    </label>
+    <label class="text-xs text-gray-500 flex items-center gap-1.5">
+      <input type="checkbox" bind:checked={showOrphans} class="rounded border-gray-300" />
+      Orphans
+    </label>
+    <label class="text-xs text-gray-500 flex items-center gap-1.5">
+      <input type="checkbox" bind:checked={showLabels} class="rounded border-gray-300" />
+      Labels
+    </label>
+    <button
+      onclick={() => (paused = !paused)}
+      class="px-2.5 py-1 rounded-md text-xs border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800"
+    >
+      {paused ? 'Resume' : 'Pause'}
+    </button>
+    <button
+      onclick={resetLayout}
+      class="px-2.5 py-1 rounded-md text-xs border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800"
+    >
+      Reset
+    </button>
   </div>
 
   <div class="flex-1 relative overflow-hidden bg-gray-50 dark:bg-gray-900">

@@ -1,15 +1,34 @@
 <script lang="ts">
+  import { open } from '@tauri-apps/plugin-dialog'
+  import { readTextFile } from '@tauri-apps/plugin-fs'
   import { settingsStore, syncStore, workspaceStore, pageStore, encryptionStore } from '../../stores/app.svelte'
   import { pluginStore } from '../../stores/plugins.svelte'
   import { t, locales, setLocale, type Locale } from '../../i18n'
   import * as api from '../../lib/api'
 
-  let { onClose }: { onClose: () => void } = $props()
+  type SettingsSection = 'appearance' | 'language' | 'data' | 'sync' | 'sharing' | 'workspaces' | 'security' | 'plugins' | 'about'
 
-  let activeSection = $state<'appearance' | 'language' | 'data' | 'sync' | 'sharing' | 'workspaces' | 'security' | 'plugins' | 'about'>('appearance')
+  let {
+    onClose,
+    initialSection = 'appearance',
+  }: {
+    onClose: () => void
+    initialSection?: SettingsSection
+  } = $props()
+
+  let activeSection = $state<SettingsSection>('appearance')
   let deviceName = $state('')
   let port = $state(9876)
   let syncPairingSecret = $state('')
+  let importStatus = $state<{ type: 'success' | 'error'; message: string } | null>(null)
+
+  $effect(() => {
+    activeSection = initialSection
+    if (initialSection === 'sync') syncStore.loadStatus()
+    if (initialSection === 'workspaces') workspaceStore.load()
+    if (initialSection === 'security') encryptionStore.checkStatus()
+    if (initialSection === 'plugins') pluginStore.loadPlugins()
+  })
 
   async function handleExport() {
     const json = await api.exportWorkspace()
@@ -35,6 +54,40 @@
       location.reload()
     }
     input.click()
+  }
+
+  function singlePath(selection: string | string[] | null): string | null {
+    if (!selection) return null
+    return Array.isArray(selection) ? (selection[0] ?? null) : selection
+  }
+
+  async function handleImportExternal(kind: 'notion' | 'obsidian' | 'evernote' | 'roam') {
+    importStatus = null
+    try {
+      if (kind === 'notion' || kind === 'obsidian') {
+        const selected = singlePath(await open({ directory: true, multiple: false }))
+        if (!selected) return
+        const result = kind === 'notion'
+          ? await api.importNotion(selected)
+          : await api.importObsidian(selected)
+        importStatus = { type: 'success', message: `Imported ${result.pagesCreated} pages from ${kind}.` }
+      } else {
+        const selected = singlePath(await open({
+          multiple: false,
+          filters: [{ name: kind === 'evernote' ? 'Evernote export' : 'Roam export', extensions: kind === 'evernote' ? ['enex'] : ['json'] }],
+        }))
+        if (!selected) return
+        const text = await readTextFile(selected)
+        const result = kind === 'evernote'
+          ? await api.importEvernote(text)
+          : await api.importRoam(text)
+        importStatus = { type: 'success', message: `Imported ${result.pagesCreated} pages from ${kind}.` }
+      }
+      await pageStore.loadPageTree()
+      await pageStore.loadRecentPages()
+    } catch (e) {
+      importStatus = { type: 'error', message: String(e) }
+    }
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -352,6 +405,36 @@
               onclick={handleImport}
               class="px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
             >{$t('settings.import')}</button>
+          </div>
+
+          <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+            <h3 class="text-sm font-semibold mb-2">Import from other apps</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">
+              Bring an existing knowledge base into 900Notes without leaving the local app.
+            </p>
+            <div class="grid grid-cols-2 gap-2">
+              <button
+                onclick={() => handleImportExternal('notion')}
+                class="px-3 py-2 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >Notion export folder</button>
+              <button
+                onclick={() => handleImportExternal('obsidian')}
+                class="px-3 py-2 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >Obsidian vault folder</button>
+              <button
+                onclick={() => handleImportExternal('evernote')}
+                class="px-3 py-2 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >Evernote ENEX file</button>
+              <button
+                onclick={() => handleImportExternal('roam')}
+                class="px-3 py-2 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >Roam JSON file</button>
+            </div>
+            {#if importStatus}
+              <p class="mt-3 text-sm {importStatus.type === 'success' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">
+                {importStatus.message}
+              </p>
+            {/if}
           </div>
         </div>
       {:else if activeSection === 'sync'}
