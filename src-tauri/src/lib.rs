@@ -4,7 +4,12 @@ mod models;
 mod services;
 
 use std::sync::{Arc, Mutex};
+#[cfg(desktop)]
+use tauri::Emitter;
 use tauri::Manager;
+
+#[cfg(desktop)]
+const NATIVE_MENU_EVENT: &str = "900notes-menu-action";
 
 pub struct AppState {
     pub db: Arc<Mutex<db::Database>>,
@@ -17,9 +22,126 @@ pub struct WorkspaceState {
     pub service: Mutex<services::workspace::WorkspaceService>,
 }
 
+#[cfg(desktop)]
+fn native_menu_item<R: tauri::Runtime, M: tauri::Manager<R>>(
+    manager: &M,
+    id: &str,
+    text: &str,
+    accelerator: Option<&str>,
+) -> tauri::Result<tauri::menu::MenuItem<R>> {
+    let mut builder = tauri::menu::MenuItemBuilder::with_id(id, text);
+    if let Some(accelerator) = accelerator {
+        builder = builder.accelerator(accelerator);
+    }
+    builder.build(manager)
+}
+
+#[cfg(desktop)]
+fn build_native_menu<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+) -> tauri::Result<tauri::menu::Menu<R>> {
+    use tauri::menu::{Menu, SubmenuBuilder};
+
+    let new_page = native_menu_item(app, "newPage", "New Page", Some("CmdOrCtrl+KeyN"))?;
+    let quick_capture = native_menu_item(
+        app,
+        "openQuickCapture",
+        "Quick Capture",
+        Some("CmdOrCtrl+Shift+KeyC"),
+    )?;
+    let web_capture = native_menu_item(
+        app,
+        "openWebCapture",
+        "Web Capture",
+        Some("CmdOrCtrl+Shift+KeyL"),
+    )?;
+    let daily_note = native_menu_item(app, "dailyNote", "Today", None)?;
+    let from_template = native_menu_item(app, "newFromTemplate", "From Template", None)?;
+    let create = SubmenuBuilder::new(app, "Create")
+        .item(&new_page)
+        .separator()
+        .item(&quick_capture)
+        .item(&web_capture)
+        .separator()
+        .item(&daily_note)
+        .item(&from_template)
+        .build()?;
+
+    let command_palette = native_menu_item(
+        app,
+        "openCommandPalette",
+        "Command Palette",
+        Some("CmdOrCtrl+KeyK"),
+    )?;
+    let recent_pages = native_menu_item(app, "openRecent", "Recent Pages", None)?;
+    let favorites = native_menu_item(app, "toggleFavorites", "Favorites", None)?;
+    let smart_folders = native_menu_item(app, "toggleSmartFolders", "Smart Folders", None)?;
+    let navigate = SubmenuBuilder::new(app, "Navigate")
+        .item(&command_palette)
+        .separator()
+        .item(&recent_pages)
+        .item(&favorites)
+        .item(&smart_folders)
+        .build()?;
+
+    let knowledge_graph = native_menu_item(app, "toggleGraph", "Knowledge Graph", None)?;
+    let local_graph = native_menu_item(app, "openLocalGraph", "Local Graph", None)?;
+    let outline = native_menu_item(app, "toggleOutline", "Outline", None)?;
+    let backlinks = native_menu_item(app, "toggleBacklinks", "Backlinks", None)?;
+    let related_pages = native_menu_item(app, "toggleRelated", "Related Pages", None)?;
+    let page_history = native_menu_item(app, "toggleHistory", "Page History", None)?;
+    let view = SubmenuBuilder::new(app, "View")
+        .item(&knowledge_graph)
+        .item(&local_graph)
+        .separator()
+        .item(&outline)
+        .item(&backlinks)
+        .item(&related_pages)
+        .item(&page_history)
+        .build()?;
+
+    let markdown = native_menu_item(app, "exportMarkdown", "Current Page as Markdown", None)?;
+    let page_pdf = native_menu_item(app, "exportPagePdf", "Current Page as PDF", None)?;
+    let workspace_pdf = native_menu_item(app, "exportWorkspacePdf", "Workspace as PDF", None)?;
+    let import_backup = native_menu_item(app, "openDataSettings", "Import and Backup", None)?;
+    let export = SubmenuBuilder::new(app, "Export")
+        .item(&markdown)
+        .item(&page_pdf)
+        .separator()
+        .item(&workspace_pdf)
+        .separator()
+        .item(&import_backup)
+        .build()?;
+
+    let local_sync = native_menu_item(app, "openSyncSettings", "Local Sync", None)?;
+    let sharing = native_menu_item(app, "openSharingSettings", "Sharing", None)?;
+    let workspaces = native_menu_item(app, "openWorkspacesSettings", "Workspaces", None)?;
+    let security = native_menu_item(app, "openSecuritySettings", "Security", None)?;
+    let plugins = native_menu_item(app, "openPluginsSettings", "Plugins", None)?;
+    let settings = native_menu_item(app, "openSettings", "Settings", Some("CmdOrCtrl+Comma"))?;
+    let tools = SubmenuBuilder::new(app, "Tools")
+        .item(&local_sync)
+        .item(&sharing)
+        .item(&workspaces)
+        .separator()
+        .item(&security)
+        .item(&plugins)
+        .separator()
+        .item(&settings)
+        .build()?;
+
+    Menu::with_items(app, &[&create, &navigate, &view, &export, &tools])
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default();
+    #[cfg(desktop)]
+    let builder = builder.menu(build_native_menu).on_menu_event(|app, event| {
+        let _ = app.emit(NATIVE_MENU_EVENT, event.id().as_ref().to_string());
+    });
+
+    builder
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {

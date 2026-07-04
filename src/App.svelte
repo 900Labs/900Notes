@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte'
+  import { listen, type UnlistenFn } from '@tauri-apps/api/event'
   import Sidebar from './components/sidebar/Sidebar.svelte'
   import AppMenuBar from './components/AppMenuBar.svelte'
   import HomeDashboard from './components/HomeDashboard.svelte'
@@ -34,6 +35,7 @@
   let isUnlocking = $state(false)
 
   let savedCallback: ((e: KeyboardEvent) => void) | null = null
+  let nativeMenuUnlisten: UnlistenFn | null = null
 
   async function loadAppData() {
     await settingsStore.loadSettings()
@@ -71,6 +73,13 @@
   }
 
   onMount(async () => {
+    try {
+      nativeMenuUnlisten = await listen<string>('900notes-menu-action', (event) => {
+        handleCommandAction(event.payload)
+      })
+    } catch {
+      nativeMenuUnlisten = null
+    }
     await encryptionStore.checkStatus()
     if (encryptionStore.enabled && !encryptionStore.unlocked) {
       return
@@ -102,6 +111,7 @@
     if (savedCallback) {
       window.removeEventListener('keydown', savedCallback)
     }
+    nativeMenuUnlisten?.()
   })
 
   async function handlePageSelect(pageId: string) {
