@@ -32,6 +32,25 @@ const page = await invoke('api_capture_web_page', {
 
 The command writes `capture.type`, `capture.source_url`, `capture.source_title`, and `capture.captured_at` page properties. This is the stable intake for a browser extension, bookmarklet, or external clipper script.
 
+### Local Web Clipper Endpoint
+
+When the desktop app starts with an unencrypted workspace, it also listens on `127.0.0.1:17690` for browser-extension clips. The endpoint accepts the same capture fields as `api_capture_web_page` and writes the same Inbox page, tags, and metadata.
+
+```bash
+curl -X POST http://127.0.0.1:17690/api/clip \
+  -H 'Content-Type: application/json' \
+  -H 'X-900Notes-Clipper: 1' \
+  -d '{
+    "sourceUrl": "https://example.com/article",
+    "title": "Example article",
+    "body": "Selected text, summary, or reading notes.",
+    "tags": ["web", "research"],
+    "useInbox": true
+  }'
+```
+
+The server only binds to localhost. Browser-origin requests are limited to extension origins and must include `X-900Notes-Clipper: 1`. Encrypted workspaces keep using the in-app capture command until the local endpoint has an unlock-aware lifecycle.
+
 ### Get Page
 
 ```typescript

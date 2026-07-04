@@ -32,6 +32,12 @@ Create a web capture page, optionally under Inbox. The command also applies tags
 
 **Properties written**: `capture.type`, `capture.source_url`, `capture.source_title`, `capture.captured_at`
 
+The desktop app also exposes a localhost-only web clipper endpoint for browser extensions when started with an unencrypted workspace:
+
+`POST http://127.0.0.1:17690/api/clip`
+
+The JSON body uses the same fields as `api_capture_web_page`. Browser-origin requests must come from an extension origin and include `X-900Notes-Clipper: 1`.
+
 ### `get_page`
 Get a single page by ID.
 

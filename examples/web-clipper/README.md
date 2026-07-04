@@ -7,7 +7,7 @@ A Chrome/Firefox extension that saves web content as notes in 900Notes.
 - **Clip full pages**: Save the entire page content as a new note
 - **Clip selections**: Right-click selected text to clip just that portion
 - **Keyboard shortcut**: `Ctrl+Shift+S` (or `Cmd+Shift+S` on Mac) to clip the current page
-- **Configurable port**: Set the 900Notes local server port in the popup
+- **Configurable port**: Set the 900Notes local clipper port in the popup
 
 ## Installation
 
@@ -36,9 +36,9 @@ A Chrome/Firefox extension that saves web content as notes in 900Notes.
 
 ## How It Works
 
-1. The **content script** (`content.js`) extracts page text and builds a ProseMirror JSON document
-2. The **background script** (`background.js`) sends the clipped content to the 900Notes local server
-3. The 900Notes app receives the clip and creates a new page
+1. The **content script** (`content.js`) extracts page text or the selected text
+2. The **background script** (`background.js`) sends the clip to `http://127.0.0.1:17690/api/clip`
+3. The 900Notes app receives the clip and creates an Inbox page with source metadata
 
 ## Architecture
 
@@ -54,12 +54,13 @@ Browser Page → content.js (extract content)
 |------|-------------|
 | `manifest.json` | Extension manifest (MV3) |
 | `background.js` | Service worker — handles commands, context menu, and HTTP requests |
-| `content.js` | Content script — extracts page content and builds ProseMirror doc |
+| `content.js` | Content script — extracts page content or selection text |
 | `popup.html` | Popup UI for settings and manual clipping |
 | `popup.js` | Popup logic — save port settings, trigger clip |
 
 ## Notes
 
-- The extension communicates with 900Notes via a local HTTP endpoint
-- The default port is 1420 (matching the Vite dev server)
-- Icons are placeholders — replace with actual PNG icons before publishing
+- The extension communicates with 900Notes via a localhost-only HTTP endpoint
+- The default port is 17690
+- 900Notes must be running with an unencrypted workspace for the local endpoint to start
+- Encrypted workspaces can still use the in-app Web capture flow

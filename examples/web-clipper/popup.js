@@ -7,9 +7,7 @@ const statusEl = document.getElementById('status');
 
 // Load saved port
 chrome.storage.local.get('port', (data) => {
-  if (data.port) {
-    portInput.value = data.port;
-  }
+  portInput.value = data.port || '17690';
 });
 
 saveBtn.addEventListener('click', () => {

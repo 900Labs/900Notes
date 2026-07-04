@@ -47,8 +47,17 @@ pub fn run() {
             let crdt = services::crdt::CrdtService::load_from_db(&database)
                 .expect("failed to load CRDT doc");
             let workspace_service = services::workspace::WorkspaceService::new(&app_data_dir);
+            let db = Arc::new(Mutex::new(database));
+            if !encryption_enabled {
+                if let Err(error) = services::web_capture::start_clipper_server(
+                    db.clone(),
+                    services::web_capture::DEFAULT_CLIPPER_PORT,
+                ) {
+                    eprintln!("Failed to start web clipper server: {error}");
+                }
+            }
             app.manage(AppState {
-                db: Arc::new(Mutex::new(database)),
+                db,
                 sync: Mutex::new(None),
                 crdt: Mutex::new(crdt),
                 passphrase: Mutex::new(None),
