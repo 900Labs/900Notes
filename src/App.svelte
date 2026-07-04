@@ -20,6 +20,7 @@
   let showCommandPalette = $state(false)
   let showTemplatePicker = $state(false)
   let showQuickCapture = $state(false)
+  let quickCaptureMode = $state<'note' | 'web'>('note')
   let showSettings = $state(false)
   let showBacklinks = $state(true)
   let showOutline = $state(false)
@@ -56,6 +57,10 @@
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'c') {
         e.preventDefault()
         handleCommandAction('openQuickCapture')
+      }
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'l') {
+        e.preventDefault()
+        handleCommandAction('openWebCapture')
       }
       if (e.key === 'Escape') {
         showCommandPalette = false
@@ -154,7 +159,30 @@
     return inbox.id
   }
 
-  async function handleQuickCapture(input: { title: string; body: string; tags: string[]; useInbox: boolean }) {
+  type QuickCaptureInput = {
+    title: string
+    body: string
+    tags: string[]
+    useInbox: boolean
+    sourceUrl?: string
+  }
+
+  async function handleQuickCapture(input: QuickCaptureInput) {
+    if (input.sourceUrl) {
+      const page = await api.apiCaptureWebPage({
+        title: input.title,
+        sourceUrl: input.sourceUrl,
+        body: input.body,
+        tags: input.tags,
+        useInbox: input.useInbox,
+      })
+      await tagStore.loadTags()
+      await pageStore.loadPageTree()
+      await pageStore.loadRecentPages()
+      await handlePageCreated(page.id)
+      return
+    }
+
     const parentId = input.useInbox ? await ensureInboxPage() : null
     const page = await api.createPage({
       parentId,
@@ -184,6 +212,11 @@
         showCommandPalette = true
         break
       case 'openQuickCapture':
+        quickCaptureMode = 'note'
+        showQuickCapture = true
+        break
+      case 'openWebCapture':
+        quickCaptureMode = 'web'
         showQuickCapture = true
         break
       case 'newPage': {
@@ -431,6 +464,7 @@
 
 {#if showQuickCapture}
   <QuickCaptureModal
+    initialMode={quickCaptureMode}
     onClose={() => (showQuickCapture = false)}
     onCapture={handleQuickCapture}
   />

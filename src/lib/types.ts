@@ -42,6 +42,15 @@ export interface CreatePageInput {
   icon?: string | null
 }
 
+export interface WebCaptureInput {
+  title?: string | null
+  sourceUrl: string
+  body?: string | null
+  tags?: string[] | null
+  useInbox?: boolean | null
+  capturedAt?: string | null
+}
+
 export interface UpdatePageInput {
   id: string
   title?: string

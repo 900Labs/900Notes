@@ -26,6 +26,7 @@
       items: [
         { label: 'New page', action: 'newPage', shortcut: 'Cmd+N' },
         { label: $t('command.quickCapture'), action: 'openQuickCapture', shortcut: 'Cmd+Shift+C' },
+        { label: $t('quickCapture.webMode'), action: 'openWebCapture', shortcut: 'Cmd+Shift+L' },
         { label: 'Today', action: 'dailyNote' },
         { label: 'From template', action: 'newFromTemplate' },
       ],
@@ -36,6 +37,7 @@
       items: [
         { label: 'Command palette', action: 'openCommandPalette', shortcut: 'Cmd+K' },
         { label: $t('command.quickCapture'), action: 'openQuickCapture', shortcut: 'Cmd+Shift+C' },
+        { label: $t('quickCapture.webMode'), action: 'openWebCapture', shortcut: 'Cmd+Shift+L' },
         { label: 'Favorites', action: 'toggleFavorites' },
         { label: 'Recent pages', action: 'openRecent' },
         { label: 'Smart folders', action: 'toggleSmartFolders' },

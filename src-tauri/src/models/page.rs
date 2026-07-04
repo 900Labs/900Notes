@@ -56,6 +56,17 @@ pub struct CreatePageInput {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct WebCaptureInput {
+    pub title: Option<String>,
+    pub source_url: String,
+    pub body: Option<String>,
+    pub tags: Option<Vec<String>>,
+    pub use_inbox: Option<bool>,
+    pub captured_at: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UpdatePageInput {
     pub id: String,
     pub title: Option<String>,

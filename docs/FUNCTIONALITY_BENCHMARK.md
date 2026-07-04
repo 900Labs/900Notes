@@ -17,7 +17,7 @@ This benchmark compares 900Notes against current patterns in adjacent note and k
 | Pattern | Similar-app baseline | 900Notes status |
 | --- | --- | --- |
 | Fast command access | Obsidian exposes commands from the keyboard with shortcuts and fuzzy matching. Joplin has fast search syntax and "Goto Anything" behavior. | Stronger after this pass: command palette now runs commands, searches pages, jumps by title with `@`, filters tags with `#`, and can save a query from normal search text. |
-| Quick capture | Joplin's clipper captures pages and screenshots into the desktop app. Notion uses buttons to reduce repetitive creation flows. | Improved: new Quick capture modal creates an Inbox item, supports body text, tags, and `Cmd+Shift+C`. Still no browser extension or system share target. |
+| Quick capture | Joplin's clipper captures pages and screenshots into the desktop app. Notion uses buttons to reduce repetitive creation flows. | Stronger: Quick capture creates Inbox items with body text and tags, and Web capture now stores source URLs, excerpts, tags, and capture metadata. Still no packaged browser extension or system share target. |
 | Graph navigation | Obsidian and Anytype make graph views first-class, with global graph controls and local graph context. | Improved: global graph remains available, current-page Local graph has depth control, filtered edge counts, and a visible Close action. Missing search-in-graph and node context actions. |
 | Smart views | Notion database views and Capacities queries make filtered, grouped, reusable views central to workspace organization. | Partial: saved searches and smart folders exist, and the palette can create saved searches. Still missing richer grouping, property-based view layouts, and reusable dashboard widgets. |
 | Workspace review | Mature apps surface unlinked content, tags, backlinks, and graph health as ongoing maintenance paths. | Improved: dashboard now includes Review queue sections for orphan pages, untagged pages, and hubs. |
@@ -28,6 +28,7 @@ This benchmark compares 900Notes against current patterns in adjacent note and k
 ## Changes Landed From This Review
 
 - Added Quick capture as a real modal workflow, shortcut, command-palette action, dashboard action, and menu item.
+- Added Web capture as a dedicated Quick Capture mode, command-palette action, dashboard action, menu item, shortcut, and automation intake command.
 - Expanded the command palette into a mixed launcher for commands, page-title jumps, tag filters, saved searches, and full-text search results.
 - Added Local graph from the editor and menu, with depth filtering and panel close.
 - Added a workspace Review queue for orphan pages, untagged pages, and linked hubs.
@@ -35,7 +36,7 @@ This benchmark compares 900Notes against current patterns in adjacent note and k
 
 ## Remaining Benchmark Gaps
 
-1. Browser/web capture: build a Joplin-style clipper or system share target that lands into Quick capture.
+1. Packaged browser/system capture: add a browser extension, bookmarklet, or platform share target that sends pages into the new Web capture intake.
 2. Graph maturity: add graph search, zoom/pan controls, group coloring, and node context actions.
 3. Smart view maturity: add property filters, grouped views, and dashboard-embeddable smart views.
 4. Workflow buttons: add Notion-style configurable page buttons for repeatable actions.

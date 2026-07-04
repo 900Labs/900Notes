@@ -5,6 +5,7 @@ import type {
   PageTreeNode,
   PageTreeNodeMeta,
   CreatePageInput,
+  WebCaptureInput,
   UpdatePageInput,
   MovePageInput,
   Tag,
@@ -430,6 +431,9 @@ export const readPluginFile = (pluginId: string, filePath: string): Promise<stri
 // ── Automation API ──
 export const apiCreatePage = (title: string, content?: string, parentId?: string): Promise<Page> =>
   invoke('api_create_page', { title, content, parentId })
+
+export const apiCaptureWebPage = (input: WebCaptureInput): Promise<Page> =>
+  invoke('api_capture_web_page', { input })
 
 export const apiGetPage = (id: string): Promise<Page> =>
   invoke('api_get_page', { id })

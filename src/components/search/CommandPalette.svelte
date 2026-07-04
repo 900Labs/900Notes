@@ -57,6 +57,7 @@
   let commands: CommandItem[] = $derived([
     { id: 'cmd-new', label: $t('command.newPage'), icon: '+', action: 'newPage', section: 'Create', keywords: 'blank note document', shortcut: 'Cmd+N', type: 'command' },
     { id: 'cmd-capture', label: $t('command.quickCapture'), icon: 'QC', action: 'openQuickCapture', section: 'Create', keywords: 'clip inbox capture web note', shortcut: 'Cmd+Shift+C', type: 'command' },
+    { id: 'cmd-web-capture', label: $t('quickCapture.webMode'), icon: 'URL', action: 'openWebCapture', section: 'Create', keywords: 'browser clipper source url link web page article', shortcut: 'Cmd+Shift+L', type: 'command' },
     { id: 'cmd-template', label: $t('command.newFromTemplate'), icon: 'T', action: 'newFromTemplate', section: 'Create', keywords: 'template meeting project journal', type: 'command' },
     { id: 'cmd-daily', label: $t('command.dailyNote'), icon: 'D', action: 'dailyNote', section: 'Create', keywords: 'today journal calendar', type: 'command' },
     { id: 'cmd-theme', label: $t('command.toggleTheme'), icon: 'A', action: 'toggleTheme', section: 'View', keywords: 'appearance light dark', type: 'command' },
