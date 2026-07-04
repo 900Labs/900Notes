@@ -1968,7 +1968,7 @@ impl Database {
             match rule.field.as_str() {
                 "tag" => {
                     conditions.push(format!(
-                        "p.id IN (SELECT page_id FROM page_tags pt JOIN tags t ON pt.tag_id = t.id WHERE t.name = ?{}",
+                        "p.id IN (SELECT page_id FROM page_tags pt JOIN tags t ON pt.tag_id = t.id WHERE t.name = ?{})",
                         param_idx
                     ));
                     params.push(Box::new(rule.value.clone()));
@@ -3132,6 +3132,52 @@ mod tests {
             .children
             .iter()
             .any(|c| c.page.id == child.id));
+    }
+
+    #[test]
+    fn test_smart_folder_tag_rule_returns_matching_pages() {
+        let db = test_db();
+        let tagged = db
+            .create_page(&CreatePageInput {
+                parent_id: None,
+                title: "Tagged View Page".to_string(),
+                content: None,
+                icon: None,
+            })
+            .unwrap();
+        db.create_page(&CreatePageInput {
+            parent_id: None,
+            title: "Other Page".to_string(),
+            content: None,
+            icon: None,
+        })
+        .unwrap();
+
+        let tag = db
+            .create_tag(&CreateTagInput {
+                name: "important".to_string(),
+                color: None,
+            })
+            .unwrap();
+        db.set_page_tags(&tagged.id, &[tag.id]).unwrap();
+
+        let rules = serde_json::to_string(&vec![SmartFolderRule {
+            field: "tag".to_string(),
+            operator: "equals".to_string(),
+            value: "important".to_string(),
+        }])
+        .unwrap();
+        let folder = db
+            .create_smart_folder(&CreateSmartFolderInput {
+                name: "Important".to_string(),
+                icon: "#".to_string(),
+                rules,
+            })
+            .unwrap();
+
+        let pages = db.get_smart_folder_pages(&folder.id).unwrap();
+        assert_eq!(pages.len(), 1);
+        assert_eq!(pages[0].page.id, tagged.id);
     }
 
     #[test]
