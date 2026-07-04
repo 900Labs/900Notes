@@ -21,7 +21,7 @@ This benchmark compares 900Notes against current patterns in adjacent note and k
 | Graph navigation | Obsidian and Anytype make graph views first-class, with global graph controls and local graph context. | Improved: global graph remains available, current-page Local graph has depth control, filtered edge counts, and a visible Close action. Missing search-in-graph and node context actions. |
 | Smart views | Notion database views and Capacities queries make filtered, grouped, reusable views central to workspace organization. | Partial: saved searches and smart folders exist, and the palette can create saved searches. Still missing richer grouping, property-based view layouts, and reusable dashboard widgets. |
 | Workspace review | Mature apps surface unlinked content, tags, backlinks, and graph health as ongoing maintenance paths. | Improved: dashboard now includes Review queue sections for orphan pages, untagged pages, and hubs. |
-| Menus | Comparable desktop apps keep creation, navigation, view, export, and tools actions discoverable from menus and command search. | Improved: Quick capture and Local graph are in menus, and page-specific palette commands are hidden when no page is active. Still missing native OS menu integration and deeper menu grouping for automation/import/capture. |
+| Menus | Comparable desktop apps keep creation, navigation, view, export, and tools actions discoverable from menus and command search. | Stronger: Create, Navigate, View, Export, and Tools actions are available in the in-app menu and the native desktop menu, with key capture and command-palette shortcuts wired through the same command dispatcher. Remaining gap: dynamic native menu enable/disable state for page-specific actions. |
 | Automation and templates | Notion buttons and templates make repeated workflows feel less manual. | Partial: templates exist and Quick capture reduces creation friction. Missing configurable buttons, page actions, and reusable workflow commands. |
 | Import/export and portability | Joplin emphasizes clipper, import/export, and local API surfaces. | Stronger: import/backup, Markdown/PDF export, sharing bundles, sync, plugin settings, typed automation, and localhost browser clipping are present. The remaining portability gap is packaging/signing rather than the intake path itself. |
 
@@ -34,6 +34,7 @@ This benchmark compares 900Notes against current patterns in adjacent note and k
 - Added Local graph from the editor and menu, with depth filtering and panel close.
 - Added a workspace Review queue for orphan pages, untagged pages, and linked hubs.
 - Hid page-specific command-palette actions when no page is selected, avoiding silent no-op commands from the dashboard.
+- Added a native desktop menu that routes Create, Navigate, View, Export, and Tools actions into the same command dispatcher as the in-app menu and command palette.
 
 ## Remaining Benchmark Gaps
 
@@ -41,4 +42,4 @@ This benchmark compares 900Notes against current patterns in adjacent note and k
 2. Graph maturity: add graph search, zoom/pan controls, group coloring, and node context actions.
 3. Smart view maturity: add property filters, grouped views, and dashboard-embeddable smart views.
 4. Workflow buttons: add Notion-style configurable page buttons for repeatable actions.
-5. Native desktop polish: wire these commands into Tauri/native menu and platform shortcuts instead of only in-app menus.
+5. Native desktop polish: add dynamic native menu enable/disable state, a standard Window menu, and deeper platform-specific polish.
