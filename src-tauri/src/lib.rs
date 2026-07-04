@@ -176,6 +176,7 @@ pub fn run() {
             commands::plugins::scan_plugins_dir,
             commands::plugins::read_plugin_file,
             commands::automation::api_create_page,
+            commands::automation::api_capture_web_page,
             commands::automation::api_get_page,
             commands::automation::api_update_page,
             commands::automation::api_delete_page,

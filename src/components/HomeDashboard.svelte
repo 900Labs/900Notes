@@ -35,6 +35,7 @@
 
   let primaryActions = $derived([
     { label: $t('command.quickCapture'), detail: $t('dashboard.quickCaptureDetail'), action: 'openQuickCapture' },
+    { label: $t('quickCapture.webMode'), detail: $t('dashboard.webCaptureDetail'), action: 'openWebCapture' },
     { label: $t('command.newPage'), detail: $t('dashboard.newPageDetail'), action: 'newPage' },
     { label: $t('daily.title'), detail: $t('dashboard.dailyNoteDetail'), action: 'dailyNote' },
     { label: $t('template.title'), detail: $t('dashboard.templateDetail'), action: 'newFromTemplate' },
@@ -104,7 +105,7 @@
     </section>
 
     <section>
-      <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {#each primaryActions as action}
           <button
             onclick={() => onAction(action.action)}

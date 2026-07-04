@@ -14,6 +14,24 @@ const page = await invoke('api_create_page', {
 });
 ```
 
+### Capture Web Page
+
+Creates an Inbox capture with a source URL, optional excerpt/body, tags, and source metadata properties.
+
+```typescript
+const page = await invoke('api_capture_web_page', {
+  input: {
+    sourceUrl: 'https://example.com/article',
+    title: 'Example article',
+    body: 'Selected text, summary, or reading notes.',
+    tags: ['web', 'research'],
+    useInbox: true,
+  },
+});
+```
+
+The command writes `capture.type`, `capture.source_url`, `capture.source_title`, and `capture.captured_at` page properties. This is the stable intake for a browser extension, bookmarklet, or external clipper script.
+
 ### Get Page
 
 ```typescript

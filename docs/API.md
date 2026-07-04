@@ -16,6 +16,22 @@ Create a new page.
 
 **Returns**: `Page`
 
+### `api_capture_web_page`
+Create a web capture page, optionally under Inbox. The command also applies tags and stores source metadata as page properties.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `input.sourceUrl` | `string` | Yes | Source page URL. Must start with `http://` or `https://` |
+| `input.title` | `string \| null` | No | Captured page title. Falls back to the source host |
+| `input.body` | `string \| null` | No | Summary, excerpt, selected text, or notes |
+| `input.tags` | `string[] \| null` | No | Tag names to create/reuse and apply |
+| `input.useInbox` | `boolean \| null` | No | Whether to create under Inbox. Defaults to `true` |
+| `input.capturedAt` | `string \| null` | No | ISO timestamp. Defaults to current UTC time |
+
+**Returns**: `Page`
+
+**Properties written**: `capture.type`, `capture.source_url`, `capture.source_title`, `capture.captured_at`
+
 ### `get_page`
 Get a single page by ID.
 
