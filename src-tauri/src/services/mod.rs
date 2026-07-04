@@ -8,4 +8,5 @@ pub mod ocr;
 pub mod pdf;
 pub mod sharing;
 pub mod sync;
+pub mod web_capture;
 pub mod workspace;

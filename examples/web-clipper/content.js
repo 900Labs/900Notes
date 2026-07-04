@@ -16,43 +16,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 function extractPageContent(selection) {
   const title = document.title || 'Untitled';
-  const url = window.location.href;
+  const sourceUrl = window.location.href;
 
-  let content;
+  let body;
   if (selection) {
-    content = selection;
+    body = selection;
   } else {
     // Extract main content area
     const article = document.querySelector('article') || document.querySelector('main') || document.body;
-    content = article ? article.innerText.trim() : '';
+    body = article ? article.innerText.trim() : '';
   }
-
-  // Build ProseMirror doc JSON
-  const paragraphs = content.split('\n').filter((l) => l.trim());
-  const nodes = paragraphs.map((text) => ({
-    type: 'paragraph',
-    content: [{ type: 'text', text: text.trim() }],
-  }));
-
-  if (nodes.length === 0) {
-    nodes.push({ type: 'paragraph' });
-  }
-
-  // Add source URL as heading
-  nodes.unshift({
-    type: 'heading',
-    attrs: { level: 1 },
-    content: [{ type: 'text', text: title }],
-  });
-  nodes.push({
-    type: 'paragraph',
-    content: [{ type: 'text', text: `Source: ${url}` }],
-  });
 
   return {
     title,
-    content: JSON.stringify({ type: 'doc', content: nodes }),
-    url,
+    sourceUrl,
+    body,
+    tags: ['web'],
+    useInbox: true,
   };
 }
 

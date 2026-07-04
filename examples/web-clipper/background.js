@@ -1,7 +1,7 @@
 // 900Notes Web Clipper — Background Service Worker
 // Handles context menu creation and command shortcuts
 
-const DEFAULT_PORT = 1420;
+const DEFAULT_PORT = 17690;
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
@@ -41,12 +41,16 @@ async function saveTo900Notes(data) {
 
   const response = await fetch(`http://127.0.0.1:${port}/api/clip`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-900Notes-Clipper': '1',
+    },
     body: JSON.stringify(data),
   });
 
   if (!response.ok) {
-    throw new Error(`Server returned ${response.status}`);
+    const error = await response.json().catch(() => null);
+    throw new Error(error?.error || `Server returned ${response.status}`);
   }
 
   return response.json();
