@@ -602,14 +602,13 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 ### Features Delivered
 
-1. **PDF Export (printpdf)**
+1. **PDF Export**
    - Export single page to PDF via command palette or editor action bar
    - Export entire workspace to PDF (one page per PDF page, skips deleted)
-   - A4 format with 20mm margins, Roboto Regular + Bold fonts embedded
+   - A4 format with margins and built-in PDF font resources
    - Renders headings, paragraphs, lists, todo items, code blocks, blockquotes, dividers
    - Math blocks and Mermaid diagrams rendered as code text
    - Images represented as `[Image: alt]` placeholder text
-   - Font subsetting enabled for smaller PDF size
 
 2. **OCR (Tesseract CLI)**
    - Extract text from embedded images via Tesseract CLI subprocess
@@ -620,10 +619,9 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 ### Architecture
 
-- **PDF Service** (`src-tauri/src/services/pdf.rs`): `printpdf` 0.9 crate, converts ProseMirror JSON to PDF operations
-  - `PdfRenderer` struct manages vertical cursor position and font selection
+- **PDF Service** (`src-tauri/src/services/pdf.rs`): built-in text PDF writer, converts ProseMirror JSON to a compact PDF stream
+  - `PdfLine`/`PdfTextStyle` helpers manage pagination and font selection
   - `export_page_pdf` / `export_pages_pdf` public functions
-  - Roboto fonts bundled at `src-tauri/assets/fonts/` via `include_bytes!`
 - **OCR Service** (`src-tauri/src/services/ocr.rs`): Shells out to `tesseract` CLI
   - Writes image to temp file, runs tesseract, reads output text
   - Cleans up temp files on completion
@@ -631,10 +629,9 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
   - `export_page_pdf`, `export_workspace_pdf`, `ocr_attachment`
 - **Frontend**: API wrappers, command palette entries, editor action bar with PDF/OCR buttons, toast notifications
 
-### Dependencies Added
+### Dependencies
 
-- `printpdf` 0.9 (Rust) — PDF generation library
-- Roboto Regular + Bold TTF fonts (bundled in `src-tauri/assets/fonts/`)
+- No active PDF generation dependency. The earlier `printpdf`/Roboto path was removed during audit remediation to eliminate the vulnerable `lopdf` chain and bad tracked font assets.
 
 ### Review Checklist
 
@@ -1193,7 +1190,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
      - Search by title
      - Reader view with rendered ProseMirror content (headings, paragraphs, lists, code blocks, blockquotes, images, todo items)
      - Back navigation
-   - **Separate Vite config**: `vite.mobile.config.ts` with `root: 'src/mobile'`, port 1421, output to `dist-mobile`
+   - **Separate Vite config**: `vite.mobile.config.ts` with `root: 'src/mobile'`, port 1421, output to ignored `dist-mobile` build artifacts
    - **Separate Tauri config**: `src-tauri/tauri.mobile.conf.json` with mobile viewport (390×844), separate identifier (`com.ninelabs.notes.mobile`)
    - **npm scripts**: `dev:mobile`, `build:mobile`, `tauri:mobile:dev`, `tauri:mobile:build`
    - **Shared backend**: Uses the same Tauri commands and SQLite database as desktop

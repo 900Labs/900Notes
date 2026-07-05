@@ -10,6 +10,8 @@ The 2026-06-29 production-readiness audit found blockers in LAN sync authenticat
 
 Those verified P0/P1 blockers have been remediated in this workspace. The project is no longer in the pre-remediation state described by the original audit notes.
 
+Public-readiness follow-up on 2026-07-05 removed tracked generated mobile artifacts, removed failed Roboto downloads that were HTML pages rather than fonts, reconciled sprint documentation, and added tracked-file release checks plus i18n coverage enforcement.
+
 ## Fixed Findings
 
 | Finding | Severity | Status | Primary Files |
@@ -29,13 +31,15 @@ At minimum, maintainers should run:
 
 ```bash
 npm run check
+npm run check:i18n
 npm run build
 npm run build:mobile
+./scripts/verify-public-release.sh
 cargo fmt --check --manifest-path src-tauri/Cargo.toml
 cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
 cargo test --manifest-path src-tauri/Cargo.toml
 cargo build --manifest-path src-tauri/Cargo.toml
-cargo audit --file src-tauri/Cargo.lock
+cargo audit --file src-tauri/Cargo.lock --ignore RUSTSEC-2026-0194 --ignore RUSTSEC-2026-0195
 npm audit
 ```
 

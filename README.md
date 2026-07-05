@@ -190,6 +190,7 @@ Your data doesn't leave your machine unless you choose to export it.
 - [Mobile Companion](docs/MOBILE.md) - read-only mobile build architecture and CSP
 - [Roadmap](docs/ROADMAP.md) - MVP scope and post-MVP phases
 - [Quality Gate](docs/QUALITY_GATE.md) - required pre-merge validation baseline
+- [Public Readiness](docs/PUBLIC_READINESS.md) - public beta release hygiene checklist
 - [Maintainer Handoff](docs/MAINTAINER_HANDOFF.md) - post-audit remediation summary and review checklist
 
 ## Contributing

@@ -30,6 +30,12 @@ jobs:
       - name: Install frontend dependencies
         run: npm install
 
+      - name: Public release checks
+        run: ./scripts/verify-public-release.sh
+
+      - name: i18n coverage
+        run: npm run check:i18n
+
       - name: Frontend type check
         run: npm run check
 

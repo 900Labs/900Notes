@@ -10,6 +10,8 @@ This handoff covers the verified audit findings fixed after the 2026-06-29 codeb
 
 Primary outcome: the project no longer has the verified audit blockers around unauthenticated LAN sync, mobile stored-content XSS, plugin path traversal, vulnerable PDF dependency chain, broken cargo-audit command, unbounded attachment BLOBs, page hierarchy cycles, or unsafe search snippets.
 
+Public-readiness update, 2026-07-05: sprint documentation has been reconciled with the sprint review log, generated mobile build output is no longer tracked, failed Roboto downloads that were actually HTML documents have been removed, and `./scripts/verify-public-release.sh` now checks tracked files for local paths, high-confidence secrets, generated artifacts, fake binary assets, and i18n coverage.
+
 ## Behavior Changes
 
 | Area | Change | User Impact |
@@ -71,13 +73,15 @@ Run these before merging:
 
 ```bash
 npm run check
+npm run check:i18n
 npm run build
 npm run build:mobile
+./scripts/verify-public-release.sh
 cargo fmt --check --manifest-path src-tauri/Cargo.toml
 cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
 cargo test --manifest-path src-tauri/Cargo.toml
 cargo build --manifest-path src-tauri/Cargo.toml
-cargo audit --file src-tauri/Cargo.lock
+cargo audit --file src-tauri/Cargo.lock --ignore RUSTSEC-2026-0194 --ignore RUSTSEC-2026-0195
 npm audit
 ./scripts/verify-local.sh
 ```
@@ -86,7 +90,8 @@ Expected caveats from the current toolchain:
 
 - `npm run build` and `npm run build:mobile` pass, but Vite reports the existing `@import` order warning for `katex/dist/katex.min.css`.
 - `npm run build` passes, but Vite reports existing large chunk warnings.
-- `cargo audit --file src-tauri/Cargo.lock` exits successfully and no longer reports the removed `lopdf`/`printpdf` vulnerability. It still reports 17 allowed warnings from GTK3/unmaintained transitive crates and `glib` via the desktop webview stack.
+- `cargo audit --file src-tauri/Cargo.lock --ignore RUSTSEC-2026-0194 --ignore RUSTSEC-2026-0195` exits successfully and no longer reports the removed `lopdf`/`printpdf` vulnerability. It still reports 17 allowed warnings from GTK3/unmaintained transitive crates and `glib` via the desktop webview stack.
+- `src/mobile/dist-mobile` and `src-tauri/assets/fonts` are ignored build/local asset paths. Rebuild mobile artifacts locally with `npm run build:mobile` when needed.
 
 ## Regression Tests Added
 

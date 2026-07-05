@@ -10,11 +10,13 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+src/mobile/dist-mobile
 *.local
 
 # Tauri
 src-tauri/target
 src-tauri/gen
+src-tauri/assets/fonts
 
 # Editor directories and files
 .vscode/*
