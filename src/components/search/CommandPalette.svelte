@@ -266,13 +266,13 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <div
-  class="fixed inset-0 z-50 bg-black/30 flex items-start justify-center pt-[15vh]"
+  class="fixed inset-0 z-50 bg-black/35 dark:bg-black/60 backdrop-blur-sm flex items-start justify-center pt-[12vh]"
   onclick={onClose}
   onkeydown={(e) => { if (e.key === 'Escape') onClose() }}
   role="presentation"
 >
   <div
-    class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-200 dark:border-gray-700"
+    class="bg-white dark:bg-gray-900 rounded-lg shadow-[0_24px_80px_rgba(0,0,0,0.22)] dark:shadow-[0_24px_90px_rgba(0,0,0,0.55)] w-full max-w-xl overflow-hidden border border-gray-200 dark:border-gray-700"
     onclick={(e) => e.stopPropagation()}
     onkeydown={(e) => e.stopPropagation()}
     role="dialog"
@@ -317,7 +317,7 @@
                 <button
                   onclick={() => selectItem(i)}
                   onmouseenter={() => (selected = i)}
-                  class="w-full text-left px-4 py-2 {i === selected ? 'bg-accent/10' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}"
+                  class="w-full text-left px-4 py-2 {i === selected ? 'bg-accent/10 dark:bg-gray-800' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}"
                 >
                   <div class="flex items-center gap-3">
                     <span class="w-8 text-center text-gray-400 font-mono text-xs">{cmd.icon}</span>
@@ -337,7 +337,7 @@
             <button
               onclick={() => selectItem(saveSearchIndex)}
               onmouseenter={() => (selected = saveSearchIndex)}
-              class="w-full text-left px-4 py-2 {saveSearchIndex === selected ? 'bg-accent/10' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}"
+              class="w-full text-left px-4 py-2 {saveSearchIndex === selected ? 'bg-accent/10 dark:bg-gray-800' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}"
             >
               <div class="flex items-center gap-3">
                 <span class="w-8 text-center text-gray-400 font-mono text-xs">SQ</span>
@@ -355,10 +355,10 @@
               <button
                 onclick={() => selectItem(idx)}
                 onmouseenter={() => (selected = idx)}
-                class="w-full text-left px-4 py-2 {idx === selected ? 'bg-accent/10' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}"
+                class="w-full text-left px-4 py-2 {idx === selected ? 'bg-accent/10 dark:bg-gray-800' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}"
               >
                 <div class="flex items-center gap-3">
-                  <span class="h-2.5 w-2.5 rounded-full" style="background-color: {tag.color || '#7c3aed'}"></span>
+                  <span class="h-2.5 w-2.5 rounded-full" style="background-color: {tag.color || '#2f6fce'}"></span>
                   <span class="text-sm font-medium">#{tag.name}</span>
                 </div>
               </button>
@@ -374,7 +374,7 @@
               <button
                 onclick={() => selectItem(idx)}
                 onmouseenter={() => (selected = idx)}
-                class="w-full text-left px-4 py-2 {idx === selected ? 'bg-accent/10' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}"
+                class="w-full text-left px-4 py-2 {idx === selected ? 'bg-accent/10 dark:bg-gray-800' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}"
               >
                 <div class="flex items-center gap-2">
                   {#if page.icon}<span>{page.icon}</span>{/if}
@@ -396,7 +396,7 @@
               <button
                 onclick={() => selectItem(idx)}
                 onmouseenter={() => (selected = idx)}
-                class="w-full text-left px-4 py-2 {idx === selected ? 'bg-accent/10' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}"
+                class="w-full text-left px-4 py-2 {idx === selected ? 'bg-accent/10 dark:bg-gray-800' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}"
               >
                 <div class="flex items-center gap-2">
                   {#if result.icon}<span>{result.icon}</span>{/if}

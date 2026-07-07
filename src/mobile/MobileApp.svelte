@@ -355,8 +355,9 @@
   }
 
   .reader-content :global(pre) {
-    background: #1e1e2e;
-    color: #cdd6f4;
+    background: #0d0d0d;
+    color: #f4f4f6;
+    border: 1px solid #242728;
     border-radius: 0.5rem;
     padding: 0.75rem 1rem;
     overflow-x: auto;
@@ -364,10 +365,10 @@
   }
 
   .reader-content :global(blockquote) {
-    border-left: 3px solid #7c3aed;
+    border-left: 3px solid #2f6fce;
     padding-left: 1rem;
     margin: 0.5rem 0;
-    color: #6b7280;
+    color: #6b655d;
   }
 
   .reader-content :global(.todo-item) {

@@ -224,20 +224,20 @@
 
   function getNodeTone(node: GraphNode): NodeTone {
     if (colorMode === 'tags') {
-      if (node.tagCount > 0) return { fill: '#10b981', stroke: '#047857' }
-      return { fill: '#f59e0b', stroke: '#b45309' }
+      if (node.tagCount > 0) return { fill: '#2a9d99', stroke: '#18736f' }
+      return { fill: '#c5822d', stroke: '#8a5a1c' }
     }
 
     if (colorMode === 'recent') {
       const age = daysSinceUpdate(node)
-      if (age <= 7) return { fill: '#22c55e', stroke: '#15803d' }
-      if (age <= 30) return { fill: '#f59e0b', stroke: '#b45309' }
-      return { fill: '#94a3b8', stroke: '#64748b' }
+      if (age <= 7) return { fill: '#3a8b5f', stroke: '#276344' }
+      if (age <= 30) return { fill: '#c5822d', stroke: '#8a5a1c' }
+      return { fill: '#a39e98', stroke: '#6b655d' }
     }
 
-    if (node.linkCount >= 5) return { fill: '#2563eb', stroke: '#1d4ed8' }
-    if (node.linkCount > 0) return { fill: '#14b8a6', stroke: '#0f766e' }
-    return { fill: '#94a3b8', stroke: '#64748b' }
+    if (node.linkCount >= 5) return { fill: '#2f6fce', stroke: '#1e4fa8' }
+    if (node.linkCount > 0) return { fill: '#2a9d99', stroke: '#18736f' }
+    return { fill: '#a39e98', stroke: '#6b655d' }
   }
 
   function simulate() {
@@ -308,7 +308,7 @@
       if (si === undefined || ti === undefined) continue
       if (!filtered.has(si) || !filtered.has(ti)) continue
       const isActiveEdge = activeNodeId !== null && (edge.source === activeNodeId || edge.target === activeNodeId)
-      ctx.strokeStyle = isActiveEdge ? 'rgba(37, 99, 235, 0.85)' : activeNodeId ? 'rgba(148, 163, 184, 0.18)' : 'rgba(150, 150, 150, 0.3)'
+      ctx.strokeStyle = isActiveEdge ? 'rgba(47, 111, 206, 0.85)' : activeNodeId ? 'rgba(163, 158, 152, 0.18)' : 'rgba(107, 101, 93, 0.28)'
       ctx.lineWidth = (isActiveEdge ? 2 : 1) / viewScale
       ctx.beginPath()
       ctx.moveTo(nodes[si].x, nodes[si].y)
@@ -329,7 +329,7 @@
       ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2)
       ctx.globalAlpha = isMuted ? 0.35 : 1
       ctx.fillStyle = tone.fill
-      ctx.strokeStyle = isSelected ? '#0f172a' : isHovered ? '#1d4ed8' : tone.stroke
+      ctx.strokeStyle = isSelected ? '#11110f' : isHovered ? '#2f6fce' : tone.stroke
       ctx.lineWidth = (isSelected ? 2.5 : isHovered ? 2 : 1) / viewScale
       ctx.fill()
       ctx.stroke()
@@ -337,13 +337,13 @@
       if (isSelected) {
         ctx.beginPath()
         ctx.arc(n.x, n.y, n.r + 4 / viewScale, 0, Math.PI * 2)
-        ctx.strokeStyle = '#0f172a'
+        ctx.strokeStyle = '#11110f'
         ctx.lineWidth = 2 / viewScale
         ctx.stroke()
       }
 
       if (showLabels || isHovered || isSelected || n.r > 12) {
-        ctx.fillStyle = isHovered || isSelected ? '#1e293b' : '#64748b'
+        ctx.fillStyle = isHovered || isSelected ? '#11110f' : '#6b655d'
         ctx.font = `${11 / viewScale}px system-ui, sans-serif`
         ctx.textAlign = 'center'
         ctx.fillText(n.title.slice(0, 24), n.x, n.y - n.r - 4)
@@ -496,7 +496,7 @@
         min="0"
         max="10"
         bind:value={minLinks}
-        class="w-20 accent-blue-500"
+        class="w-20 accent-accent"
       />
       <span class="w-4 text-center">{minLinks}</span>
     </label>
@@ -508,7 +508,7 @@
           min="1"
           max="4"
           bind:value={localDepth}
-          class="w-16 accent-blue-500"
+          class="w-16 accent-accent"
         />
         <span class="w-4 text-center">{localDepth}</span>
       </label>
@@ -521,7 +521,7 @@
         max="2.5"
         step="0.1"
         bind:value={viewScale}
-        class="w-20 accent-blue-500"
+        class="w-20 accent-accent"
       />
     </label>
     <label class="text-xs text-gray-500 flex items-center gap-1.5">
@@ -531,7 +531,7 @@
         min="60"
         max="220"
         bind:value={linkDistance}
-        class="w-20 accent-blue-500"
+        class="w-20 accent-accent"
       />
     </label>
     <label class="text-xs text-gray-500 flex items-center gap-1.5">
@@ -542,7 +542,7 @@
         max="1600"
         step="100"
         bind:value={repelForce}
-        class="w-20 accent-blue-500"
+        class="w-20 accent-accent"
       />
     </label>
     <label class="text-xs text-gray-500 flex items-center gap-1.5">
@@ -717,20 +717,20 @@
         <div class="mb-1 font-semibold text-gray-600 dark:text-gray-300">{$t('graph.colorBy')}: {colorMode === 'connections' ? $t('graph.colorConnections') : colorMode === 'tags' ? $t('graph.colorTags') : $t('graph.colorRecent')}</div>
         {#if colorMode === 'connections'}
           <div class="flex flex-wrap gap-x-3 gap-y-1">
-            <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-blue-600"></span>{$t('graph.legendHub')}</span>
-            <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-teal-500"></span>{$t('graph.legendLinked')}</span>
-            <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-slate-400"></span>{$t('graph.legendOrphan')}</span>
+            <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-accent"></span>{$t('graph.legendHub')}</span>
+            <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-[#2a9d99]"></span>{$t('graph.legendLinked')}</span>
+            <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-[#a39e98]"></span>{$t('graph.legendOrphan')}</span>
           </div>
         {:else if colorMode === 'tags'}
           <div class="flex flex-wrap gap-x-3 gap-y-1">
-            <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>{$t('graph.legendTagged')}</span>
-            <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span>{$t('graph.legendUntagged')}</span>
+            <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-[#2a9d99]"></span>{$t('graph.legendTagged')}</span>
+            <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-[#c5822d]"></span>{$t('graph.legendUntagged')}</span>
           </div>
         {:else}
           <div class="flex flex-wrap gap-x-3 gap-y-1">
-            <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-green-500"></span>{$t('graph.legendRecent')}</span>
-            <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span>{$t('graph.legendOlder')}</span>
-            <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-slate-400"></span>{$t('graph.legendOld')}</span>
+            <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-[#3a8b5f]"></span>{$t('graph.legendRecent')}</span>
+            <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-[#c5822d]"></span>{$t('graph.legendOlder')}</span>
+            <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-[#a39e98]"></span>{$t('graph.legendOld')}</span>
           </div>
         {/if}
       </div>

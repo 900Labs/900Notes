@@ -70,7 +70,7 @@
           <span class="text-[10px]">{expandedGroups.has(group.id) ? '▼' : '▶'}</span>
           <span
             class="w-2 h-2 rounded-full shrink-0"
-            style="background: {group.color || '#7c3aed'}"
+            style="background: {group.color || '#2f6fce'}"
           ></span>
           <span class="truncate flex-1">{group.name}</span>
         </button>
@@ -93,7 +93,7 @@
               >
                 <span
                   class="w-2.5 h-2.5 rounded-full shrink-0"
-                  style="background: {tag.color || '#7c3aed'}"
+                  style="background: {tag.color || '#2f6fce'}"
                 ></span>
                 <span class="truncate">{tag.name}</span>
               </button>
@@ -116,7 +116,7 @@
     >
       <span
         class="w-2.5 h-2.5 rounded-full shrink-0"
-        style="background: {tag.color || '#7c3aed'}"
+        style="background: {tag.color || '#2f6fce'}"
       ></span>
       <span class="truncate">{tag.name}</span>
     </button>
@@ -130,7 +130,7 @@
       >
         <span
           class="w-2.5 h-2.5 rounded-full shrink-0"
-          style="background: {tag.color || '#7c3aed'}"
+          style="background: {tag.color || '#2f6fce'}"
         ></span>
         <span class="truncate">{tag.name}</span>
       </button>

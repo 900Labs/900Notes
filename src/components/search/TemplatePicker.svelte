@@ -39,13 +39,13 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <div
-  class="fixed inset-0 z-50 bg-black/30 flex items-start justify-center pt-[15vh]"
+  class="fixed inset-0 z-50 bg-black/35 dark:bg-black/60 backdrop-blur-sm flex items-start justify-center pt-[12vh]"
   onclick={onClose}
   onkeydown={(e) => { if (e.key === 'Escape') onClose() }}
   role="presentation"
 >
   <div
-    class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-200 dark:border-gray-700"
+    class="bg-white dark:bg-gray-900 rounded-lg shadow-[0_24px_80px_rgba(0,0,0,0.22)] dark:shadow-[0_24px_90px_rgba(0,0,0,0.55)] w-full max-w-md overflow-hidden border border-gray-200 dark:border-gray-700"
     onclick={(e) => e.stopPropagation()}
     onkeydown={(e) => e.stopPropagation()}
     role="dialog"
@@ -64,7 +64,7 @@
           <button
             onclick={() => onSelect(tpl)}
             onmouseenter={() => (selected = i)}
-            class="w-full text-left px-3 py-2.5 rounded-lg flex items-center gap-3 {i === selected ? 'bg-accent/10' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}"
+            class="w-full text-left px-3 py-2.5 rounded-md flex items-center gap-3 {i === selected ? 'bg-accent/10 dark:bg-gray-800' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}"
           >
             <span class="text-xl">{tpl.icon}</span>
             <div class="flex-1 min-w-0">

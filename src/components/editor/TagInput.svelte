@@ -65,9 +65,9 @@
     <button
       onclick={() => removeTag(tag.id)}
       class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium hover:opacity-70"
-      style="background: {tag.color || '#7c3aed'}20; color: {tag.color || '#7c3aed'}"
+      style="background: {tag.color || '#2f6fce'}20; color: {tag.color || '#2f6fce'}"
     >
-      <span class="w-1.5 h-1.5 rounded-full" style="background: {tag.color || '#7c3aed'}"></span>
+      <span class="w-1.5 h-1.5 rounded-full" style="background: {tag.color || '#2f6fce'}"></span>
       {tag.name}
       <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -90,7 +90,7 @@
               onclick={() => addTag(tag.id)}
               class="w-full text-left px-2 py-1 text-xs hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-1.5"
             >
-              <span class="w-2 h-2 rounded-full" style="background: {tag.color || '#7c3aed'}"></span>
+              <span class="w-2 h-2 rounded-full" style="background: {tag.color || '#2f6fce'}"></span>
               {tag.name}
             </button>
           {/each}
