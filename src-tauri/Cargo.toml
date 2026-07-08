@@ -1,6 +1,6 @@
 [package]
 name = "notes"
-version = "0.1.0"
+version = "1.5.0"
 description = "Knowledge base and note-taking with bidirectional linking. Your second brain, fully owned."
 authors = ["900 Labs"]
 license = "Apache-2.0"
