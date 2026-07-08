@@ -1,5 +1,6 @@
 <script lang="ts">
   import { t } from '../../i18n'
+  import { schema } from '../../lib/editor/schema'
 
   interface HeadingItem {
     level: number
@@ -19,25 +20,14 @@
 
   function extractHeadings(contentStr: string): HeadingItem[] {
     try {
-      const doc = JSON.parse(contentStr)
-      if (!doc.content) return []
+      const doc = schema.nodeFromJSON(JSON.parse(contentStr))
       const items: HeadingItem[] = []
-      let pos = 0
-      for (const node of doc.content) {
-        if (node.type === 'heading' && node.attrs) {
-          const level = node.attrs.level || 1
-          let text = ''
-          if (node.content) {
-            for (const child of node.content) {
-              if (child.type === 'text') {
-                text += child.text || ''
-              }
-            }
-          }
-          items.push({ level, text, pos })
+      doc.descendants((node, pos) => {
+        if (node.type.name === 'heading') {
+          const level = Number(node.attrs.level) || 1
+          items.push({ level, text: node.textContent, pos })
         }
-        pos += 1
-      }
+      })
       return items
     } catch {
       return []

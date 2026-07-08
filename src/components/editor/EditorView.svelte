@@ -6,6 +6,7 @@
   import * as editorLib from '../../lib/editor'
   import * as api from '../../lib/api'
   import type { EditorView as PMEditorView } from 'prosemirror-view'
+  import { TextSelection } from 'prosemirror-state'
   import EditorToolbar from './EditorToolbar.svelte'
   import SlashMenu from './SlashMenu.svelte'
   import WikiLinkAutocomplete from './WikiLinkAutocomplete.svelte'
@@ -264,6 +265,15 @@
   function handleSlashSelect(action: string) {
     showSlashMenu = false
     handleToolbarAction(action)
+  }
+
+  export function scrollToHeading(pos: number) {
+    if (!pmView) return
+    const doc = pmView.state.doc
+    const target = Math.max(1, Math.min(pos + 1, doc.content.size))
+    const selection = TextSelection.near(doc.resolve(target), 1)
+    pmView.dispatch(pmView.state.tr.setSelection(selection).scrollIntoView())
+    pmView.focus()
   }
 </script>
 

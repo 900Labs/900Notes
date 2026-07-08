@@ -1,7 +1,10 @@
+use base64::{engine::general_purpose::URL_SAFE_NO_PAD as BASE64_URL, Engine};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::fs::OpenOptions;
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
+use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
@@ -12,9 +15,12 @@ use crate::models::{
 };
 
 pub const DEFAULT_CLIPPER_PORT: u16 = 17690;
+pub const CLIPPER_TOKEN_FILE: &str = "web-clipper-token";
 
 const MAX_CLIPPER_BODY_BYTES: usize = 2 * 1024 * 1024;
 const READ_CHUNK_BYTES: usize = 8 * 1024;
+const CLIPPER_AUTH_HEADER: &str = "X-900Notes-Clipper-Token";
+const CLIPPER_TOKEN_BYTES: usize = 32;
 
 #[derive(Debug)]
 struct HttpRequest {
@@ -58,9 +64,41 @@ struct HealthResponse {
     port: u16,
 }
 
-pub fn start_clipper_server(db: Arc<Mutex<Database>>, port: u16) -> Result<(), String> {
+pub fn load_or_create_clipper_token(app_data_dir: &Path) -> Result<String, String> {
+    let token_path = app_data_dir.join(CLIPPER_TOKEN_FILE);
+    match std::fs::read_to_string(&token_path) {
+        Ok(token) => {
+            let token = token.trim().to_string();
+            if !token.is_empty() {
+                return Ok(token);
+            }
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => return Err(format!("read web clipper token: {error}")),
+    }
+
+    std::fs::create_dir_all(app_data_dir).map_err(|e| format!("create app data dir: {e}"))?;
+    let token = generate_clipper_token()?;
+    write_new_token_file(&token_path, &token)?;
+    let token = std::fs::read_to_string(&token_path)
+        .map_err(|e| format!("read web clipper token: {e}"))?
+        .trim()
+        .to_string();
+    if token.is_empty() {
+        Err("web clipper token file is empty".to_string())
+    } else {
+        Ok(token)
+    }
+}
+
+pub fn start_clipper_server(
+    db: Arc<Mutex<Database>>,
+    port: u16,
+    auth_token: String,
+) -> Result<(), String> {
     let listener = TcpListener::bind(("127.0.0.1", port))
         .map_err(|e| format!("failed to bind web clipper on 127.0.0.1:{port}: {e}"))?;
+    let auth_token = Arc::new(auth_token);
 
     thread::Builder::new()
         .name("900notes-web-clipper".to_string())
@@ -69,8 +107,11 @@ pub fn start_clipper_server(db: Arc<Mutex<Database>>, port: u16) -> Result<(), S
                 match stream {
                     Ok(stream) => {
                         let db = db.clone();
+                        let auth_token = auth_token.clone();
                         thread::spawn(move || {
-                            if let Err(error) = handle_clipper_connection(stream, db, port) {
+                            if let Err(error) =
+                                handle_clipper_connection(stream, db, port, auth_token)
+                            {
                                 eprintln!("Web clipper request failed: {error}");
                             }
                         });
@@ -184,6 +225,7 @@ fn handle_clipper_connection(
     mut stream: TcpStream,
     db: Arc<Mutex<Database>>,
     port: u16,
+    auth_token: Arc<String>,
 ) -> Result<(), String> {
     stream
         .set_read_timeout(Some(Duration::from_secs(3)))
@@ -208,7 +250,13 @@ fn handle_clipper_connection(
             write_response(&mut stream, 200, Some(&body), cors_origin.as_deref())
         }
         ("OPTIONS", "/api/clip") => write_response(&mut stream, 204, None, cors_origin.as_deref()),
-        ("POST", "/api/clip") => handle_clip_post(&mut stream, request, db, cors_origin.as_deref()),
+        ("POST", "/api/clip") => handle_clip_post(
+            &mut stream,
+            request,
+            db,
+            cors_origin.as_deref(),
+            auth_token.as_str(),
+        ),
         _ => write_json_error(&mut stream, 404, "not found", cors_origin.as_deref()),
     }
 }
@@ -218,18 +266,10 @@ fn handle_clip_post(
     request: HttpRequest,
     db: Arc<Mutex<Database>>,
     cors_origin: Option<&str>,
+    auth_token: &str,
 ) -> Result<(), String> {
-    if cors_origin.is_some()
-        && request
-            .header("x-900notes-clipper")
-            .is_none_or(|value| value != "1")
-    {
-        return write_json_error(
-            stream,
-            403,
-            "missing X-900Notes-Clipper header",
-            cors_origin,
-        );
+    if let Some(error) = clipper_auth_error(&request, auth_token) {
+        return write_json_error(stream, 403, &error, cors_origin);
     }
 
     let content_type = request.header("content-type").unwrap_or_default();
@@ -279,6 +319,13 @@ fn handle_clip_post(
         }
         Err(error) => write_json_error(stream, 400, &error, cors_origin),
     }
+}
+
+fn clipper_auth_error(request: &HttpRequest, auth_token: &str) -> Option<String> {
+    request
+        .header("x-900notes-clipper-token")
+        .is_none_or(|value| value != auth_token)
+        .then(|| format!("missing or invalid {CLIPPER_AUTH_HEADER} header"))
 }
 
 impl HttpRequest {
@@ -436,7 +483,8 @@ fn write_response(
         headers.push_str("Vary: Origin\r\n");
         headers.push_str(&format!("Access-Control-Allow-Origin: {origin}\r\n"));
         headers.push_str("Access-Control-Allow-Methods: POST, OPTIONS\r\n");
-        headers.push_str("Access-Control-Allow-Headers: content-type, x-900notes-clipper\r\n");
+        headers
+            .push_str("Access-Control-Allow-Headers: content-type, x-900notes-clipper-token\r\n");
         headers.push_str("Access-Control-Max-Age: 600\r\n");
     }
     headers.push_str("\r\n");
@@ -460,6 +508,42 @@ fn status_reason(status: u16) -> &'static str {
 
 fn map_err(e: impl std::fmt::Display) -> String {
     e.to_string()
+}
+
+fn generate_clipper_token() -> Result<String, String> {
+    let mut bytes = [0u8; CLIPPER_TOKEN_BYTES];
+    getrandom::getrandom(&mut bytes).map_err(|e| format!("CSPRNG: {e}"))?;
+    Ok(BASE64_URL.encode(bytes))
+}
+
+fn write_new_token_file(path: &Path, token: &str) -> Result<(), String> {
+    let mut options = OpenOptions::new();
+    options.write(true).create_new(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(0o600);
+    }
+
+    match options.open(path) {
+        Ok(mut file) => {
+            file.write_all(token.as_bytes())
+                .map_err(|e| format!("write web clipper token: {e}"))?;
+            file.write_all(b"\n")
+                .map_err(|e| format!("write web clipper token: {e}"))
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+            let existing = std::fs::read_to_string(path)
+                .map_err(|e| format!("read web clipper token: {e}"))?;
+            let existing = existing.trim();
+            if existing.is_empty() {
+                Err("web clipper token file is empty".to_string())
+            } else {
+                Ok(())
+            }
+        }
+        Err(error) => Err(format!("create web clipper token: {error}")),
+    }
 }
 
 fn trim_optional(value: Option<String>) -> Option<String> {
@@ -554,6 +638,8 @@ mod tests {
 
     use super::*;
 
+    const TEST_CLIPPER_TOKEN: &str = "test-clipper-token";
+
     #[test]
     fn capture_web_page_creates_inbox_tags_and_metadata() {
         let db = Database::open(Path::new(":memory:")).unwrap();
@@ -634,5 +720,60 @@ mod tests {
         .unwrap_err();
 
         assert_eq!(error, "sourceUrl must start with http:// or https://");
+    }
+
+    #[test]
+    fn load_or_create_clipper_token_persists_random_token() {
+        let dir =
+            std::env::temp_dir().join(format!("900notes-clipper-token-{}", uuid::Uuid::new_v4()));
+        let token_path = dir.join(CLIPPER_TOKEN_FILE);
+
+        let token = load_or_create_clipper_token(&dir).unwrap();
+
+        assert!(token.len() >= 32);
+        assert_eq!(std::fs::read_to_string(&token_path).unwrap().trim(), token);
+        assert_eq!(load_or_create_clipper_token(&dir).unwrap(), token);
+
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn clipper_auth_rejects_missing_token() {
+        let request = request_with_token(None);
+
+        assert_eq!(
+            clipper_auth_error(&request, TEST_CLIPPER_TOKEN),
+            Some("missing or invalid X-900Notes-Clipper-Token header".to_string())
+        );
+    }
+
+    #[test]
+    fn clipper_auth_rejects_wrong_token() {
+        let request = request_with_token(Some("wrong-token"));
+
+        assert_eq!(
+            clipper_auth_error(&request, TEST_CLIPPER_TOKEN),
+            Some("missing or invalid X-900Notes-Clipper-Token header".to_string())
+        );
+    }
+
+    #[test]
+    fn clipper_auth_accepts_valid_token() {
+        let request = request_with_token(Some(TEST_CLIPPER_TOKEN));
+
+        assert_eq!(clipper_auth_error(&request, TEST_CLIPPER_TOKEN), None);
+    }
+
+    fn request_with_token(token: Option<&str>) -> HttpRequest {
+        let mut headers = HashMap::new();
+        if let Some(token) = token {
+            headers.insert("x-900notes-clipper-token".to_string(), token.to_string());
+        }
+        HttpRequest {
+            method: "POST".to_string(),
+            path: "/api/clip".to_string(),
+            headers,
+            body: Vec::new(),
+        }
     }
 }

@@ -1,0 +1,54 @@
+name: Release Gate
+
+on:
+  workflow_dispatch:
+
+jobs:
+  macos-release-gate:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Install frontend dependencies
+        run: npm install
+
+      - name: Install Rust release tools
+        run: |
+          cargo install cargo-audit --locked
+          cargo install tauri-cli --version 2.11.4 --locked
+
+      - name: Public release checks
+        run: ./scripts/verify-public-release.sh
+
+      - name: Local quality gate
+        run: ./scripts/verify-local.sh
+
+      - name: Mobile frontend build
+        run: npm run build:mobile
+
+      - name: Frontend dependency audit
+        run: npm audit --audit-level=moderate
+
+      - name: macOS Tauri bundle
+        run: npm run tauri:build
+
+      - name: Generate DMG checksum
+        run: shasum -a 256 src-tauri/target/release/bundle/dmg/*.dmg | tee src-tauri/target/release/bundle/dmg/SHA256SUMS
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: 900notes-macos-release-gate
+          path: |
+            src-tauri/target/release/bundle/dmg/*.dmg
+            src-tauri/target/release/bundle/dmg/SHA256SUMS

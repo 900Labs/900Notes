@@ -16,10 +16,27 @@ pub struct AppState {
     pub sync: Mutex<Option<services::sync::SyncService>>,
     pub crdt: Mutex<services::crdt::CrdtService>,
     pub passphrase: Mutex<Option<String>>,
+    pub clipper_started: Mutex<bool>,
+    pub clipper_token: String,
 }
 
 pub struct WorkspaceState {
     pub service: Mutex<services::workspace::WorkspaceService>,
+}
+
+pub fn start_web_clipper(state: &AppState) -> Result<(), String> {
+    let mut started = state.clipper_started.lock().map_err(|e| e.to_string())?;
+    if *started {
+        return Ok(());
+    }
+
+    services::web_capture::start_clipper_server(
+        state.db.clone(),
+        services::web_capture::DEFAULT_CLIPPER_PORT,
+        state.clipper_token.clone(),
+    )?;
+    *started = true;
+    Ok(())
 }
 
 #[cfg(desktop)]
@@ -170,20 +187,22 @@ pub fn run() {
                 .expect("failed to load CRDT doc");
             let workspace_service = services::workspace::WorkspaceService::new(&app_data_dir);
             let db = Arc::new(Mutex::new(database));
-            if !encryption_enabled {
-                if let Err(error) = services::web_capture::start_clipper_server(
-                    db.clone(),
-                    services::web_capture::DEFAULT_CLIPPER_PORT,
-                ) {
-                    eprintln!("Failed to start web clipper server: {error}");
-                }
-            }
-            app.manage(AppState {
+            let clipper_token = services::web_capture::load_or_create_clipper_token(&app_data_dir)
+                .expect("failed to load web clipper token");
+            let app_state = AppState {
                 db,
                 sync: Mutex::new(None),
                 crdt: Mutex::new(crdt),
                 passphrase: Mutex::new(None),
-            });
+                clipper_started: Mutex::new(false),
+                clipper_token,
+            };
+            if !encryption_enabled {
+                if let Err(error) = start_web_clipper(&app_state) {
+                    eprintln!("Failed to start web clipper server: {error}");
+                }
+            }
+            app.manage(app_state);
             app.manage(WorkspaceState {
                 service: Mutex::new(workspace_service),
             });

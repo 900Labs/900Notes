@@ -1,7 +1,7 @@
 # 900Notes Threat Model
 
 **Version**: 1.0  
-**Date**: 2026-06-29  
+**Date**: 2026-07-08
 **Status**: Active
 
 ## 1. Overview
@@ -21,6 +21,7 @@ This document formalizes the security posture, identifies threats, and describes
 | Sync state | Automerge CRDT document | SQLite `sync_state` table |
 | Encryption keys | Derived from passphrase, not stored | In-memory only |
 | Workspace registry | List of workspaces + DB paths | `workspaces.json` in app data dir |
+| Web clipper token | Bearer token for localhost clip creation | `web-clipper-token` in app data dir |
 
 ## 3. Trust Boundaries
 
@@ -51,6 +52,7 @@ This document formalizes the security posture, identifies threats, and describes
 1. **Tauri IPC Boundary**: Between the Svelte WebView and Rust backend. All commands are explicitly registered; no arbitrary code execution from the frontend.
 2. **File System Boundary**: Data at rest on disk. Protected by OS-level permissions and optional AES-256-GCM encryption.
 3. **LAN Sync Boundary**: Network communication with peer devices. mDNS announcements are visible on the local network; TCP sync handshakes are encrypted with the user-provided pairing secret.
+4. **Local Web Clipper Boundary**: Browser extensions and local scripts can send clips to `127.0.0.1:17690` only when they know the per-install clipper token.
 
 ## 4. Threat Actors
 
@@ -152,6 +154,21 @@ This document formalizes the security posture, identifies threats, and describes
 
 **Severity**: LOW
 
+### 5.8 Local Web Clipper Abuse (T8)
+
+**Threat**: A local process or malicious browser context writes arbitrary pages through the localhost web clipper endpoint.
+**Impact**: Unwanted note creation, inbox pollution, misleading source metadata.
+**Likelihood**: Low-Medium.
+**Mitigation**:
+- The clipper binds only to `127.0.0.1`.
+- Browser-origin requests are limited to extension origins by CORS.
+- Every clip creation request must include the per-install `X-900Notes-Clipper-Token`.
+- Request bodies are capped at 2 MB and source URLs must start with `http://` or `https://`.
+- Encrypted workspaces start the clipper only after unlock, when the real database is available.
+- **Residual risk**: Malware running as the user can read the token file from the app data directory and can still write local clips.
+
+**Severity**: MEDIUM → LOW-MEDIUM with token enforcement
+
 ## 6. Security Controls Summary
 
 | Control | Status | Sprint |
@@ -179,6 +196,7 @@ This document formalizes the security posture, identifies threats, and describes
 | Cargo audit in CI | ✅ Implemented | Audit |
 | Iterative key derivation (100K rounds) | ✅ Implemented | Audit |
 | CSPRNG for salt/nonce (getrandom) | ✅ Implemented | Audit |
+| Web clipper per-install token | ✅ Implemented | Audit remediation |
 | Authenticated sync pairing protocol | ❌ Not implemented | Future |
 | PBKDF2/Argon2 key derivation | ❌ Not implemented | Future |
 | Auto-lock timeout | ❌ Not implemented | Future |

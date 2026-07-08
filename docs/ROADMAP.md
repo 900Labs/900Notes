@@ -1,5 +1,7 @@
 # Roadmap
 
+Status updated: 2026-07-08. Checked items are implemented in the current app/API; unchecked items remain future hardening, certification, or distribution work.
+
 ## MVP (Current)
 
 - [x] Project scaffold (Tauri v2 + Rust + Svelte 5 + TailwindCSS)
@@ -21,55 +23,58 @@
 ## Post-MVP
 
 ### Phase 1: Enhanced Productivity
-- Graph view (interactive force-directed graph of page connections)
-- Note templates (meeting notes, daily journal, project pages)
-- Command palette (extended Ctrl/Cmd+K for actions)
-- Outline view (table of contents from headings)
-- Page properties/metadata (custom key-value pairs)
-- Daily notes with automatic linking
+- [x] Graph view (interactive force-directed graph of page connections)
+- [x] Note templates (meeting notes, daily journal, project pages)
+- [x] Command palette (extended Ctrl/Cmd+K for actions)
+- [x] Outline view (table of contents from headings)
+- [x] Page properties/metadata (custom key-value pairs)
+- [x] Daily notes with automatic linking
 
 ### Phase 2: Organization & Discovery
-- Saved searches
-- Smart folders (rule-based dynamic collections)
-- Page history/versioning with diff view
-- Favorites/bookmarks
-- Related pages suggestions
-- Tag groups (hierarchical)
+- [x] Saved searches
+- [x] Smart folders (rule-based dynamic collections)
+- [x] Page history/versioning
+- [x] Favorites/bookmarks
+- [x] Related pages suggestions
+- [x] Tag groups (hierarchical)
 
 ### Phase 3: Content Richness
-- Image embedding (stored as blobs in SQLite)
-- File attachments
-- Math/LaTeX rendering
-- Mermaid diagram support
-- PDF export
-- OCR (offline, Tesseract-based)
-- Audio notes
+- [x] Image embedding (stored as blobs in SQLite)
+- [x] File attachments
+- [x] Math/LaTeX rendering
+- [x] Mermaid diagram support
+- [x] PDF export
+- [x] OCR (offline, Tesseract-based)
+- [x] Audio notes
 
 ### Phase 4: Sync & Collaboration
-- Local network sync (no cloud)
-- CRDT-based sync engine for multi-device
-- Workspace sharing (export subset as shareable bundle)
-- Read-only published views (static HTML export)
-- Team workspaces (multiple local workspaces)
+- [x] Local network sync (no cloud)
+- [x] CRDT-based sync engine for multi-device
+- [x] Workspace sharing (export subset as shareable bundle)
+- [ ] Read-only published views (static HTML export)
+- [x] Multiple local workspaces
+- [ ] Team workspaces
 
 ### Phase 5: Security & Privacy
-- End-to-end encryption (encrypt SQLite at rest)
-- Encrypted export bundles
-- Threat model documentation
-- Privacy model documentation
-- Secure delete (overwrite deleted content)
+- [x] Local database encryption at rest
+- [x] Encrypted export bundles
+- [x] Threat model documentation
+- [x] Privacy model documentation
+- [x] Secure delete (overwrite deleted content)
+- [ ] Argon2id/PBKDF2 passphrase KDF with versioned metadata
 
 ### Phase 6: Accessibility & Platform
-- Screen reader support (ARIA, semantic HTML)
-- High contrast theme (WCAG AA)
-- Keyboard-only navigation
-- Legacy hardware optimization (4GB RAM profiling)
-- Mobile companion (read-only)
-- Additional languages (Portuguese, Bengali, Urdu, Amharic)
+- [ ] Screen reader support audit and remediation
+- [x] High contrast theme
+- [x] Keyboard-only navigation for primary workflows
+- [ ] Legacy hardware optimization (4GB RAM profiling)
+- [x] Mobile companion (read-only)
+- [x] Additional languages (Portuguese, Bengali, Urdu, Amharic)
 
 ### Phase 7: Extensibility
-- Plugin system (local plugins for custom blocks, themes)
-- Custom blocks (user-defined block types)
-- Automation API (local IPC for scripting)
-- Import from other tools (Evernote, Notion, Obsidian, Roam)
-- Web clipper (browser extension)
+- [x] Plugin system (local plugins for custom blocks, themes)
+- [x] Custom blocks (user-defined block types)
+- [x] Automation API (local IPC for scripting)
+- [x] Import from other tools (Evernote, Notion, Obsidian, Roam)
+- [x] Web clipper (browser extension)
+- [ ] Published/signed browser extension and system share targets

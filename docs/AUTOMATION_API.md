@@ -34,12 +34,15 @@ The command writes `capture.type`, `capture.source_url`, `capture.source_title`,
 
 ### Local Web Clipper Endpoint
 
-When the desktop app starts with an unencrypted workspace, it also listens on `127.0.0.1:17690` for browser-extension clips. The endpoint accepts the same capture fields as `api_capture_web_page` and writes the same Inbox page, tags, and metadata.
+When the desktop app starts with an unencrypted workspace or after an encrypted workspace is unlocked, it also listens on `127.0.0.1:17690` for browser-extension clips. The endpoint accepts the same capture fields as `api_capture_web_page` and writes the same Inbox page, tags, and metadata. The app creates a per-install token in the `web-clipper-token` file in the app data directory next to `900notes.db`.
 
 ```bash
+APP_DATA_DIR="/path/to/900Notes app data"
+CLIPPER_TOKEN="$(cat "$APP_DATA_DIR/web-clipper-token")"
+
 curl -X POST http://127.0.0.1:17690/api/clip \
   -H 'Content-Type: application/json' \
-  -H 'X-900Notes-Clipper: 1' \
+  -H "X-900Notes-Clipper-Token: $CLIPPER_TOKEN" \
   -d '{
     "sourceUrl": "https://example.com/article",
     "title": "Example article",
@@ -49,7 +52,7 @@ curl -X POST http://127.0.0.1:17690/api/clip \
   }'
 ```
 
-The server only binds to localhost. Browser-origin requests are limited to extension origins and must include `X-900Notes-Clipper: 1`. Encrypted workspaces keep using the in-app capture command until the local endpoint has an unlock-aware lifecycle.
+The server only binds to localhost. Every clip creation request must include the per-install `X-900Notes-Clipper-Token`; browser-origin requests are also limited to extension origins.
 
 ### Get Page
 

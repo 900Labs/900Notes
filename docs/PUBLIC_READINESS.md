@@ -1,7 +1,7 @@
 # Public Readiness
 
-**Status**: Public beta ready after this cleanup is committed.
-**Last readiness sprint**: 2026-07-05
+**Status**: Public beta ready after the 2026-07-08 hardening patch is committed and the gate below passes.
+**Last readiness sprint**: 2026-07-08
 
 This document tracks the release hygiene checks that sit after the 20 planned feature sprints.
 
@@ -14,16 +14,22 @@ This document tracks the release hygiene checks that sit after the 20 planned fe
 - Recent web capture, smart view, and graph inspector copy added to all 10 locale dictionaries.
 - CI now runs the public release gate and i18n coverage before the normal frontend/Rust checks.
 - Stale PDF documentation updated to match the current built-in text PDF writer.
+- Web clipper localhost writes now require a per-install token, including non-browser local requests.
+- Web clipper startup is unlock-aware for encrypted workspaces.
+- Outline panel heading clicks navigate the live editor.
+- `package-lock.json` version metadata is synced with `package.json`.
+- CI now runs `npm audit` and `npm run build:mobile`; a manual Release Gate workflow packages the macOS app and uploads the DMG/checksum artifact.
 
 ## Latest Verification
 
-Validated on 2026-07-05:
+Validated on 2026-07-08:
 
 - `./scripts/verify-public-release.sh` passed. It still prints expected hostname warnings for local-only clipper, sync, and development surfaces.
 - `./scripts/verify-local.sh` passed through i18n coverage, frontend type check, frontend build, Rust formatting, Rust clippy, Rust tests, and Rust build.
 - `cargo audit --file src-tauri/Cargo.lock --ignore RUSTSEC-2026-0194 --ignore RUSTSEC-2026-0195` passed with 17 allowed GTK/WebKit/Tauri stack warnings.
 - `npm run build:mobile` passed.
 - `npm audit` passed with 0 vulnerabilities.
+- `npm run tauri:build` produced a macOS app bundle and DMG.
 - `git diff --check` passed.
 
 ## Required Before Making Public
@@ -33,6 +39,7 @@ Validated on 2026-07-05:
 ./scripts/verify-local.sh
 npm run build:mobile
 npm audit
+npm run tauri:build
 ```
 
 Expected caveat: `cargo audit` may still report allowed warnings from the GTK/WebKit/Tauri desktop stack, as documented in `docs/MAINTAINER_HANDOFF.md`. Those warnings are not treated as the removed `lopdf`/`printpdf` blocker.

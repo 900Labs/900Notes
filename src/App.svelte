@@ -33,6 +33,7 @@
   let unlockPassphrase = $state('')
   let unlockError = $state<string | null>(null)
   let isUnlocking = $state(false)
+  let editorView = $state<{ scrollToHeading: (pos: number) => void } | null>(null)
 
   let savedCallback: ((e: KeyboardEvent) => void) | null = null
   let nativeMenuUnlisten: UnlistenFn | null = null
@@ -129,6 +130,10 @@
   function openSettings(section: typeof settingsSection = 'appearance') {
     settingsSection = section
     showSettings = true
+  }
+
+  function handleOutlineHeadingClick(pos: number) {
+    editorView?.scrollToHeading(pos)
   }
 
   function prosemirrorFromText(body: string): string {
@@ -416,6 +421,7 @@
       />
     {:else if pageStore.currentPage}
       <EditorView
+        bind:this={editorView}
         page={pageStore.currentPage}
         onNavigate={handlePageSelect}
         onAppAction={handleCommandAction}
@@ -435,7 +441,7 @@
     <aside class="w-56 h-full bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden shrink-0">
       <OutlinePanel
         content={pageStore.currentPage.content}
-        onHeadingClick={() => {}}
+        onHeadingClick={handleOutlineHeadingClick}
       />
     </aside>
   {/if}

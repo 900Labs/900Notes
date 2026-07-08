@@ -1,18 +1,21 @@
 // 900Notes Web Clipper — Popup Script
 
 const portInput = document.getElementById('port');
+const tokenInput = document.getElementById('token');
 const saveBtn = document.getElementById('save');
 const clipBtn = document.getElementById('clip');
 const statusEl = document.getElementById('status');
 
-// Load saved port
-chrome.storage.local.get('port', (data) => {
+// Load saved settings
+chrome.storage.local.get(['port', 'clipperToken'], (data) => {
   portInput.value = data.port || '17690';
+  tokenInput.value = data.clipperToken || '';
 });
 
 saveBtn.addEventListener('click', () => {
   const port = parseInt(portInput.value, 10);
-  chrome.storage.local.set({ port });
+  const clipperToken = tokenInput.value.trim();
+  chrome.storage.local.set({ port, clipperToken });
   showStatus('Settings saved', 'ok');
 });
 

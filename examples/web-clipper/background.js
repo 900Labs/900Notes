@@ -37,13 +37,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 async function saveTo900Notes(data) {
-  const { port = DEFAULT_PORT } = await chrome.storage.local.get('port');
+  const { port = DEFAULT_PORT, clipperToken = '' } = await chrome.storage.local.get([
+    'port',
+    'clipperToken',
+  ]);
+  const token = clipperToken.trim();
+  if (!token) {
+    throw new Error('900Notes clipper token is required');
+  }
 
   const response = await fetch(`http://127.0.0.1:${port}/api/clip`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-900Notes-Clipper': '1',
+      'X-900Notes-Clipper-Token': token,
     },
     body: JSON.stringify(data),
   });

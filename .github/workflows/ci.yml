@@ -30,6 +30,9 @@ jobs:
       - name: Install frontend dependencies
         run: npm install
 
+      - name: Frontend dependency audit
+        run: npm audit --audit-level=moderate
+
       - name: Public release checks
         run: ./scripts/verify-public-release.sh
 
@@ -41,6 +44,9 @@ jobs:
 
       - name: Frontend build
         run: npm run build
+
+      - name: Mobile frontend build
+        run: npm run build:mobile
 
       - name: Rust format check
         run: cargo fmt --check --manifest-path src-tauri/Cargo.toml

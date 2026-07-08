@@ -91,7 +91,7 @@
 - Plugin system uses existing DB infrastructure (no separate DB)
 - Automation API wraps existing DB methods (no new queries)
 - Importers use existing `create_page` DB method
-- Web clipper expects local HTTP server (not yet implemented — documented limitation)
+- Web clipper uses the localhost HTTP server and the same capture pipeline as the automation command.
 - Encryption/sharing use same `derive_key` pattern (now hardened)
 
 ---
@@ -201,5 +201,5 @@
 2. Replace shared-secret sync pairing with QR-code pairing or a PAKE/Noise-based flow
 3. Sandbox plugin execution (Web Workers or iframe)
 4. Fix remaining 21 a11y warnings (div click handlers → buttons)
-5. Implement local HTTP server for web clipper
+5. Publish/sign the browser clipper and keep its local authentication model reviewed as browser-extension support matures
 6. Add automated tests (unit tests for DB, integration tests for commands)

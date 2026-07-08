@@ -80,6 +80,10 @@ pub fn unlock_database(
     *state.db.lock().map_err(|e| e.to_string())? = database;
     *state.passphrase.lock().map_err(|e| e.to_string())? = Some(passphrase);
 
+    if let Err(error) = crate::start_web_clipper(&state) {
+        eprintln!("Failed to start web clipper server after unlock: {error}");
+    }
+
     Ok(true)
 }
 
@@ -106,6 +110,10 @@ pub fn disable_encryption(
         crate::db::Database::open(&db_path).map_err(|e| format!("Open plain DB: {e}"))?;
     *state.db.lock().map_err(|e| e.to_string())? = database;
     *state.passphrase.lock().map_err(|e| e.to_string())? = None;
+
+    if let Err(error) = crate::start_web_clipper(&state) {
+        eprintln!("Failed to start web clipper server after disabling encryption: {error}");
+    }
 
     Ok(())
 }
