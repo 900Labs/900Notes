@@ -18,17 +18,22 @@ Fixes # (issue number)
 - 
 
 ## Translation Keys
-If you added new UI text, did you add translation keys to all 6 languages?
+If you added new UI text, did you add translation keys to all 10 languages?
 - [ ] English
 - [ ] French
 - [ ] Spanish
 - [ ] Swahili
 - [ ] Hindi
 - [ ] Arabic
+- [ ] Portuguese
+- [ ] Bengali
+- [ ] Urdu
+- [ ] Amharic
 - [ ] No new UI text
 
 ## Quality Gate
 - [ ] `npm run check` passes
+- [ ] `npm test` passes
 - [ ] `npm run build` passes
 - [ ] `cargo fmt --check` passes
 - [ ] `cargo clippy -- -D warnings` passes

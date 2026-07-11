@@ -1,4 +1,4 @@
-// 900Notes Web Clipper — Content Script
+// 900Notes Web Clipper: Content Script
 // Extracts page content and sends to background for saving
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

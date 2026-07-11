@@ -26,7 +26,7 @@ Use **SQLite** with the **FTS5** extension for data storage and full-text search
 ## Consequences
 
 ### Positive
-- Single-file database (`900notes.db`) — trivial to backup, copy, and export
+- Single-file database (`900notes.db`) - trivial to backup, copy, and export
 - ACID-compliant with WAL journal mode for concurrent reads
 - FTS5 provides high-quality full-text search with Unicode tokenization
 - Triggers keep the FTS index in sync automatically
@@ -36,7 +36,7 @@ Use **SQLite** with the **FTS5** extension for data storage and full-text search
 
 ### Negative
 - SQLite is not designed for concurrent writes from multiple processes (fine for a single-user desktop app)
-- FTS5 tokenizer (`unicode61`) may not handle all languages perfectly (e.g., CJK languages need custom tokenizers — post-MVP)
+- FTS5 tokenizer (`unicode61`) may not handle all languages perfectly (e.g., CJK languages need custom tokenizers - post-MVP)
 - No built-in encryption (post-MVP: Sprint 14 will add AES-256 encryption at the application layer)
 
 ### Neutral
@@ -45,15 +45,15 @@ Use **SQLite** with the **FTS5** extension for data storage and full-text search
 
 ## Alternatives Considered
 
-1. **JSON files** — Rejected because full-text search would require loading all files into memory. No relational queries for the page tree or link graph.
+1. **JSON files** - Rejected because full-text search would require loading all files into memory. No relational queries for the page tree or link graph.
 
-2. **PostgreSQL embedded** — Rejected because PostgreSQL cannot be embedded. It requires a server process, which violates the offline-first, no-server constraint.
+2. **PostgreSQL embedded** - Rejected because PostgreSQL cannot be embedded. It requires a server process, which violates the offline-first, no-server constraint.
 
-3. **DuckDB** — Considered for its analytical capabilities, but rejected because it's optimized for OLAP workloads. SQLite is better suited for OLTP (point queries, single-row updates).
+3. **DuckDB** - Considered for its analytical capabilities, but rejected because it's optimized for OLAP workloads. SQLite is better suited for OLTP (point queries, single-row updates).
 
-4. **LMDB / sled** — Rejected because they are key-value stores, not relational databases. Full-text search and hierarchical queries would require significant custom code.
+4. **LMDB / sled** - Rejected because they are key-value stores, not relational databases. Full-text search and hierarchical queries would require significant custom code.
 
-5. **Tantivy (search-only)** — Considered for search, but rejected to avoid maintaining two data stores. FTS5 is sufficient for the MVP and keeps everything in a single file.
+5. **Tantivy (search-only)** - Considered for search, but rejected to avoid maintaining two data stores. FTS5 is sufficient for the MVP and keeps everything in a single file.
 
 ## References
 

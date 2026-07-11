@@ -53,6 +53,12 @@ export function createEditor(
       if (transaction.docChanged) {
         callbacks.onChange(JSON.stringify(view.state.doc.toJSON()))
       }
+      const active = activeWikiLinkQuery(view)
+      if (active) {
+        window.dispatchEvent(new CustomEvent('wiki-link-query', { detail: active }))
+      } else {
+        window.dispatchEvent(new CustomEvent('wiki-link-close'))
+      }
     },
     handleClickOn(view, _pos, node) {
       if (node.type.name === 'wiki_link') {
@@ -201,7 +207,7 @@ function buildWikiLinkPlugin(callbacks: EditorCallbacks): Plugin {
 
 function showWikiLinkAutocomplete(
   _view: EditorView,
-  _pos: number,
+  pos: number,
   callbacks: EditorCallbacks,
 ) {
   // This will be handled by the Svelte component's autocomplete overlay
@@ -209,19 +215,40 @@ function showWikiLinkAutocomplete(
   const titles = callbacks.getPageTitles()
   // Dispatch a custom event that the Svelte component listens for
   window.dispatchEvent(
-    new CustomEvent('wiki-link-start', { detail: { titles } }),
+    new CustomEvent('wiki-link-start', { detail: { titles, from: pos - 1 } }),
   )
+}
+
+export function activeWikiLinkQuery(view: EditorView): { from: number; query: string } | null {
+  const { $from } = view.state.selection
+  if (!$from.parent.isTextblock) return null
+  const before = $from.parent.textBetween(0, $from.parentOffset, '')
+  return wikiLinkQueryFromText(before, $from.start())
+}
+
+export function wikiLinkQueryFromText(
+  beforeCursor: string,
+  textBlockStart = 0,
+): { from: number; query: string } | null {
+  const trigger = beforeCursor.lastIndexOf('[[')
+  if (trigger < 0) return null
+  const query = beforeCursor.slice(trigger + 2)
+  if (query.includes(']]') || query.includes('\n')) return null
+  return { from: textBlockStart + trigger, query }
 }
 
 export function insertWikiLink(
   view: EditorView,
   title: string,
   pageId: string | null,
+  triggerFrom: number | null = null,
 ) {
   const { state } = view
   const { selection } = state
   const wikiLinkNode = schema.nodes.wiki_link.create({ title, pageId })
-  const tr = state.tr.replaceSelectionWith(wikiLinkNode, false)
+  const tr = triggerFrom === null
+    ? state.tr.replaceSelectionWith(wikiLinkNode, false)
+    : state.tr.replaceRangeWith(triggerFrom, selection.from, wikiLinkNode)
   view.dispatch(tr)
   view.focus()
 }

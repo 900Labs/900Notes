@@ -32,6 +32,12 @@ if [ -n "$secret_assignments" ]; then
 fi
 echo "  ✓ No high-confidence secrets found"
 
+typographic_dashes="$(git grep -n -I -E '—|–' -- README.md CONTRIBUTING.md SECURITY.md SUPPORT.md GOVERNANCE.md CODE_OF_CONDUCT.md CHANGELOG.md index.html src public docs examples .github || true)"
+if [ -n "$typographic_dashes" ]; then
+  fail_with_matches "Found prohibited em or en dashes in public-facing source" "$typographic_dashes"
+fi
+echo "  ✓ No em or en dashes in public-facing source"
+
 hostnames="$(git grep -n -I -E 'localhost|127\.0\.0\.1|0\.0\.0\.0' -- src src-tauri ':!src-tauri/target' ':!src/mobile/dist-mobile' || true)"
 if [ -n "$hostnames" ]; then
   echo "$hostnames"
@@ -63,6 +69,10 @@ echo "  ✓ Binary asset MIME check passed"
 
 npm run check:i18n
 echo "  ✓ i18n coverage complete"
+npm run check:version
+echo "  ✓ version consistency complete"
+npm run check:capabilities
+echo "  ✓ Tauri capability coverage complete"
 
 echo ""
 echo "=== Privacy gate passed ✓ ==="

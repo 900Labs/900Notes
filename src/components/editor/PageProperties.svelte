@@ -77,7 +77,7 @@
             onclick={() => startEdit(prop.id, prop.value)}
             class="text-left px-2 py-1 text-sm rounded hover:bg-gray-100 dark:hover:bg-gray-700 truncate"
           >
-            {prop.value || '—'}
+            {prop.value || '-'}
           </button>
         {/if}
         <button

@@ -1,5 +1,7 @@
 <script lang="ts">
   import { open } from '@tauri-apps/plugin-dialog'
+  import { getVersion } from '@tauri-apps/api/app'
+  import { onMount } from 'svelte'
   import { readTextFile } from '@tauri-apps/plugin-fs'
   import { settingsStore, syncStore, workspaceStore, pageStore, encryptionStore } from '../../stores/app.svelte'
   import { pluginStore } from '../../stores/plugins.svelte'
@@ -21,6 +23,15 @@
   let port = $state(9876)
   let syncPairingSecret = $state('')
   let importStatus = $state<{ type: 'success' | 'error'; message: string } | null>(null)
+  let appVersion = $state('1.6.0')
+
+  onMount(async () => {
+    try {
+      appVersion = await getVersion()
+    } catch {
+      // Browser preview does not expose Tauri application metadata.
+    }
+  })
 
   $effect(() => {
     activeSection = initialSection
@@ -31,6 +42,7 @@
   })
 
   async function handleExport() {
+    await pageStore.flushPendingEdits?.()
     const json = await api.exportWorkspace()
     const blob = new Blob([json], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
@@ -48,9 +60,11 @@
     input.onchange = async () => {
       const file = input.files?.[0]
       if (!file) return
+      if (!confirm($t('settings.restoreConfirm'))) return
+      await pageStore.flushPendingEdits?.()
       const text = await file.text()
       const count = await api.importWorkspace(text)
-      alert(`Imported ${count} pages`)
+      alert($t('settings.restoreComplete', { count }))
       location.reload()
     }
     input.click()
@@ -70,7 +84,7 @@
         const result = kind === 'notion'
           ? await api.importNotion(selected)
           : await api.importObsidian(selected)
-        importStatus = { type: 'success', message: `Imported ${result.pagesCreated} pages from ${kind}.` }
+        importStatus = importResultMessage(kind, result)
       } else {
         const selected = singlePath(await open({
           multiple: false,
@@ -81,12 +95,24 @@
         const result = kind === 'evernote'
           ? await api.importEvernote(text)
           : await api.importRoam(text)
-        importStatus = { type: 'success', message: `Imported ${result.pagesCreated} pages from ${kind}.` }
+        importStatus = importResultMessage(kind, result)
       }
       await pageStore.loadPageTree()
       await pageStore.loadRecentPages()
     } catch (e) {
       importStatus = { type: 'error', message: String(e) }
+    }
+  }
+
+  function importResultMessage(kind: string, result: api.ImportResult) {
+    if (result.errors.length === 0) {
+      return { type: 'success' as const, message: `Imported ${result.pagesCreated} pages from ${kind}.` }
+    }
+    const details = result.errors.slice(0, 3).join(' | ')
+    const remaining = result.errors.length > 3 ? ` (+${result.errors.length - 3} more)` : ''
+    return {
+      type: 'error' as const,
+      message: `Imported ${result.pagesCreated} pages from ${kind}, with ${result.errors.length} errors: ${details}${remaining}`,
     }
   }
 
@@ -98,6 +124,7 @@
   }
 
   async function handleStartSync() {
+    await pageStore.flushPendingEdits?.()
     await syncStore.start(deviceName || undefined, port || undefined, syncPairingSecret)
   }
 
@@ -106,7 +133,10 @@
   }
 
   async function handleSyncWithPeer(peerId: string) {
+    await pageStore.flushPendingEdits?.()
     await syncStore.syncWithPeer(peerId)
+    if (pageStore.currentPage) await pageStore.loadPage(pageStore.currentPage.id)
+    await pageStore.loadPageTree()
   }
 
   async function handleRefreshPeers() {
@@ -114,7 +144,10 @@
   }
 
   async function handleApplyCrdt() {
+    await pageStore.flushPendingEdits?.()
     await syncStore.applyCrdtToDb()
+    if (pageStore.currentPage) await pageStore.loadPage(pageStore.currentPage.id)
+    await pageStore.loadPageTree()
   }
 
   let sharePageIds = $state('')
@@ -127,6 +160,7 @@
   async function handleExportShareBundle() {
     const ids = sharePageIds.split(',').map(s => s.trim()).filter(Boolean)
     if (ids.length === 0 || !sharePassphrase) return
+    await pageStore.flushPendingEdits?.()
     const encrypted = await api.exportShareBundle(ids, sharePassphrase)
     const blob = new Blob([encrypted], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
@@ -154,6 +188,7 @@
 
   async function handleExportPageHtml() {
     if (!pageStore.currentPage) return
+    await pageStore.flushPendingEdits?.()
     const html = await api.exportPageHtml(pageStore.currentPage.id)
     const blob = new Blob([html], { type: 'text/html' })
     const url = URL.createObjectURL(blob)
@@ -177,6 +212,8 @@
   }
 
   async function handleDeleteWorkspace(id: string) {
+    const workspace = workspaceStore.workspaces.find((item) => item.id === id)
+    if (!confirm($t('workspaces.deleteConfirm', { name: workspace?.name ?? '' }))) return
     await workspaceStore.remove(id)
   }
 
@@ -197,6 +234,7 @@
 
   async function handleEnableEncryption() {
     if (!enablePassphrase || enablePassphrase !== enableConfirm) return
+    await pageStore.flushPendingEdits?.()
     await encryptionStore.enable(enablePassphrase)
     enablePassphrase = ''
     enableConfirm = ''
@@ -210,12 +248,14 @@
 
   async function handleDisableEncryption() {
     if (!disablePassphrase) return
+    await pageStore.flushPendingEdits?.()
     await encryptionStore.disable(disablePassphrase)
     disablePassphrase = ''
   }
 
   async function handleChangePassphrase() {
     if (!changeOldPassphrase || !changeNewPassphrase) return
+    await pageStore.flushPendingEdits?.()
     await encryptionStore.changePassphrase(changeOldPassphrase, changeNewPassphrase)
     changeOldPassphrase = ''
     changeNewPassphrase = ''
@@ -223,6 +263,7 @@
 
   async function handleExportEncrypted() {
     if (!exportEncPassphrase) return
+    await pageStore.flushPendingEdits?.()
     const encoded = await api.exportEncryptedWorkspace(exportEncPassphrase)
     const blob = new Blob([encoded], { type: 'application/octet-stream' })
     const url = URL.createObjectURL(blob)
@@ -241,10 +282,12 @@
     input.onchange = async () => {
       const file = input.files?.[0]
       if (!file || !exportEncPassphrase) return
+      if (!confirm($t('settings.restoreConfirm'))) return
+      await pageStore.flushPendingEdits?.()
       const text = await file.text()
       const count = await api.importEncryptedWorkspace(text, exportEncPassphrase)
-      alert(`Imported ${count} pages`)
-      await pageStore.loadPageTree()
+      alert($t('settings.restoreComplete', { count }))
+      location.reload()
     }
     input.click()
   }
@@ -255,15 +298,13 @@
     const id = secureDeletePageId || pageStore.currentPage?.id
     if (!id) return
     if (!confirm($t('security.secureDeleteConfirm'))) return
-    await api.secureDeletePage(id)
+    await pageStore.secureDeletePage(id)
     secureDeletePageId = ''
-    await pageStore.loadPageTree()
   }
 
   async function handleSecureEmptyTrash() {
     if (!confirm($t('security.secureDeleteConfirm'))) return
-    await api.secureEmptyTrash()
-    await pageStore.loadPageTree()
+    await pageStore.secureEmptyTrash()
   }
 </script>
 
@@ -844,7 +885,7 @@
         <div class="space-y-3 text-sm">
           <div>
             <span class="text-gray-500 dark:text-gray-400">{$t('settings.version')}: </span>
-            <span class="font-medium">0.1.0</span>
+            <span class="font-medium">{appVersion}</span>
           </div>
           <div>
             <span class="text-gray-500 dark:text-gray-400">{$t('settings.license')}: </span>
@@ -852,13 +893,16 @@
           </div>
           <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
             <p class="text-gray-600 dark:text-gray-400">
-              900Notes is a note-taking app that works completely offline. Your notes stay on your computer. No subscriptions, no cloud, no account required.
+              {$t('about.what')}
+            </p>
+            <p class="text-gray-600 dark:text-gray-400 mt-3">
+              {$t('about.how')}
             </p>
             <p class="text-gray-500 dark:text-gray-500 text-xs mt-3">
-              Built by <a href="https://www.900labs.com" class="text-accent hover:underline" target="_blank" rel="noreferrer">900 Labs</a>. Open source tools for people who get priced out of the software they need.
+              {$t('about.mission')}
             </p>
             <p class="text-gray-400 dark:text-gray-600 text-xs mt-2">
-              Free. Forever.
+              {$t('about.free')}
             </p>
           </div>
         </div>

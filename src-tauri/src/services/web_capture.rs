@@ -5,6 +5,7 @@ use std::fs::OpenOptions;
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
@@ -95,6 +96,7 @@ pub fn start_clipper_server(
     db: Arc<Mutex<Database>>,
     port: u16,
     auth_token: String,
+    workspace_locked: Arc<AtomicBool>,
 ) -> Result<(), String> {
     let listener = TcpListener::bind(("127.0.0.1", port))
         .map_err(|e| format!("failed to bind web clipper on 127.0.0.1:{port}: {e}"))?;
@@ -108,10 +110,15 @@ pub fn start_clipper_server(
                     Ok(stream) => {
                         let db = db.clone();
                         let auth_token = auth_token.clone();
+                        let workspace_locked = workspace_locked.clone();
                         thread::spawn(move || {
-                            if let Err(error) =
-                                handle_clipper_connection(stream, db, port, auth_token)
-                            {
+                            if let Err(error) = handle_clipper_connection(
+                                stream,
+                                db,
+                                port,
+                                auth_token,
+                                workspace_locked,
+                            ) {
                                 eprintln!("Web clipper request failed: {error}");
                             }
                         });
@@ -226,6 +233,7 @@ fn handle_clipper_connection(
     db: Arc<Mutex<Database>>,
     port: u16,
     auth_token: Arc<String>,
+    workspace_locked: Arc<AtomicBool>,
 ) -> Result<(), String> {
     stream
         .set_read_timeout(Some(Duration::from_secs(3)))
@@ -256,6 +264,7 @@ fn handle_clipper_connection(
             db,
             cors_origin.as_deref(),
             auth_token.as_str(),
+            workspace_locked.as_ref(),
         ),
         _ => write_json_error(&mut stream, 404, "not found", cors_origin.as_deref()),
     }
@@ -267,7 +276,11 @@ fn handle_clip_post(
     db: Arc<Mutex<Database>>,
     cors_origin: Option<&str>,
     auth_token: &str,
+    workspace_locked: &AtomicBool,
 ) -> Result<(), String> {
+    if workspace_locked.load(Ordering::Acquire) {
+        return write_json_error(stream, 423, "workspace is locked", cors_origin);
+    }
     if let Some(error) = clipper_auth_error(&request, auth_token) {
         return write_json_error(stream, 403, &error, cors_origin);
     }

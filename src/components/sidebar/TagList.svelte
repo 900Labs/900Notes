@@ -60,7 +60,7 @@
     onclick={() => onFilter(null)}
     class="w-full text-left px-2 py-1.5 rounded text-sm {!activeFilter ? 'bg-accent/10 text-accent' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}"
   >
-    All pages
+    {$t('sidebar.allPages')}
   </button>
 
   {#each discoveryStore.tagGroups as group (group.id)}
@@ -156,7 +156,7 @@
         type="text"
         bind:value={newTagName}
         onkeydown={(e) => { if (e.key === 'Enter') handleCreate(); if (e.key === 'Escape') showInput = false }}
-        placeholder="Tag name..."
+        placeholder={$t('tag.namePlaceholder')}
         class="flex-1 px-2 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:outline-none focus:border-accent"
       />
       <button onclick={handleCreate} class="px-2 py-1 text-xs rounded bg-accent text-white">+</button>

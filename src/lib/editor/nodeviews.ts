@@ -1,20 +1,24 @@
 import type { Node } from 'prosemirror-model'
 import type { EditorView, NodeView } from 'prosemirror-view'
 import katex from 'katex'
-import mermaid from 'mermaid'
 import * as api from '../api'
 
 let mermaidInitialized = false
+let mermaidInstance: typeof import('mermaid')['default'] | null = null
 
-function ensureMermaid() {
+async function ensureMermaid() {
+  if (!mermaidInstance) {
+    mermaidInstance = (await import('mermaid')).default
+  }
   if (!mermaidInitialized) {
-    mermaid.initialize({
+    mermaidInstance.initialize({
       startOnLoad: false,
       theme: document.documentElement.classList.contains('dark') ? 'dark' : 'default',
-      securityLevel: 'loose',
+      securityLevel: 'strict',
     })
     mermaidInitialized = true
   }
+  return mermaidInstance
 }
 
 export class MathInlineView implements NodeView {
@@ -234,7 +238,7 @@ export class MermaidBlockView implements NodeView {
       return
     }
     try {
-      ensureMermaid()
+      const mermaid = await ensureMermaid()
       const id = 'mermaid-' + Math.random().toString(36).substring(2, 11)
       const { svg } = await mermaid.render(id, source)
       this.renderedEl.innerHTML = svg

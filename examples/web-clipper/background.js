@@ -1,4 +1,4 @@
-// 900Notes Web Clipper — Background Service Worker
+// 900Notes Web Clipper: Background Service Worker
 // Handles context menu creation and command shortcuts
 
 const DEFAULT_PORT = 17690;

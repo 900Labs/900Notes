@@ -1,5 +1,7 @@
 import type { Page, PageTreeNode, PageTreeNodeMeta, PageMetadata, Tag, SearchResult, Backlink, PageProperty, Template, SavedSearch, SmartFolder, PageRevision, Favorite, TagGroup, RelatedPage, Attachment, AudioNote, SyncStatus, SyncDeviceInfo, Workspace } from '../lib/types'
 import * as api from '../lib/api'
+import { mutateAfterCurrentPageFlush, mutateAfterFlush } from '../lib/page-lifecycle'
+import { setLocale } from '../i18n'
 
 export class PageStore {
   currentPage = $state<Page | null>(null)
@@ -7,6 +9,8 @@ export class PageStore {
   recentPages = $state<PageMetadata[]>([])
   trashPages = $state<Page[]>([])
   isLoading = $state(false)
+  flushPendingEdits: (() => Promise<void>) | null = null
+  editorReloadToken = $state(0)
 
   async loadPageTree() {
     this.isLoading = true
@@ -21,20 +25,31 @@ export class PageStore {
     this.isLoading = true
     try {
       this.currentPage = await api.getPage(id)
+      this.editorReloadToken += 1
     } finally {
       this.isLoading = false
     }
   }
 
+  showReloadedPage(page: Page) {
+    this.currentPage = page
+    this.editorReloadToken += 1
+  }
+
   async createPage(title: string, parentId: string | null): Promise<Page> {
-    const page = await api.createPage({ parentId, title, content: undefined })
+    const page = await mutateAfterFlush(
+      this.flushPendingEdits,
+      () => api.createPage({ parentId, title, content: undefined }),
+    )
     await this.loadPageTree()
     return page
   }
 
   async updatePage(id: string, updates: Partial<{ title: string; content: string; icon: string | null; coverColor: string | null; pinned: boolean }>) {
     const updated = await api.updatePage({ id, ...updates })
-    this.currentPage = updated
+    if (this.currentPage?.id === id) {
+      this.currentPage = updated
+    }
     const isContentOnly = Object.keys(updates).length === 1 && 'content' in updates
     if (!isContentOnly) {
       await this.loadPageTree()
@@ -43,7 +58,12 @@ export class PageStore {
   }
 
   async deletePage(id: string) {
-    await api.deletePage(id)
+    await mutateAfterCurrentPageFlush(
+      this.currentPage?.id,
+      id,
+      this.flushPendingEdits,
+      () => api.deletePage(id),
+    )
     if (this.currentPage?.id === id) {
       this.currentPage = null
     }
@@ -51,19 +71,35 @@ export class PageStore {
   }
 
   async restorePage(id: string) {
-    await api.restorePage(id)
+    const page = await mutateAfterCurrentPageFlush(
+      this.currentPage?.id,
+      id,
+      this.flushPendingEdits,
+      () => api.restorePage(id),
+    )
+    if (this.currentPage?.id === id) this.showReloadedPage(page)
     await this.loadPageTree()
     await this.loadTrash()
   }
 
   async duplicatePage(id: string) {
-    const page = await api.duplicatePage(id)
+    const page = await mutateAfterCurrentPageFlush(
+      this.currentPage?.id,
+      id,
+      this.flushPendingEdits,
+      () => api.duplicatePage(id),
+    )
     await this.loadPageTree()
     return page
   }
 
   async movePage(id: string, parentId: string | null, sortOrder: number) {
-    await api.movePage({ id, parentId, sortOrder })
+    await mutateAfterCurrentPageFlush(
+      this.currentPage?.id,
+      id,
+      this.flushPendingEdits,
+      () => api.movePage({ id, parentId, sortOrder }),
+    )
     await this.loadPageTree()
   }
 
@@ -76,7 +112,24 @@ export class PageStore {
   }
 
   async emptyTrash() {
-    await api.emptyTrash()
+    await mutateAfterFlush(this.flushPendingEdits, () => api.emptyTrash())
+    await this.loadTrash()
+  }
+
+  async secureDeletePage(id: string) {
+    await mutateAfterCurrentPageFlush(
+      this.currentPage?.id,
+      id,
+      this.flushPendingEdits,
+      () => api.secureDeletePage(id),
+    )
+    if (this.currentPage?.id === id) this.currentPage = null
+    await this.loadPageTree()
+  }
+
+  async secureEmptyTrash() {
+    await mutateAfterFlush(this.flushPendingEdits, () => api.secureEmptyTrash())
+    await this.loadPageTree()
     await this.loadTrash()
   }
 
@@ -373,7 +426,16 @@ export class SettingsStore {
   activeTagFilter = $state<string | null>(null)
   sidebarTab = $state<string>('pages')
 
+  resetWorkspaceSettings() {
+    this.theme = 'system'
+    this.language = 'en'
+    this.fontSize = 16
+    this.lineSpacing = 1.5
+    this.activeTagFilter = null
+  }
+
   async loadSettings() {
+    this.resetWorkspaceSettings()
     const settings = await api.getAllSettings()
     for (const [key, value] of settings) {
       switch (key) {
@@ -392,6 +454,7 @@ export class SettingsStore {
       }
     }
     this.applyTheme()
+    setLocale(this.language as Parameters<typeof setLocale>[0])
   }
 
   async setTheme(theme: 'light' | 'dark' | 'system' | 'high-contrast') {
@@ -532,9 +595,43 @@ export class WorkspaceStore {
   }
 
   async switch(id: string) {
+    await pageStore.flushPendingEdits?.()
     await api.switchWorkspace(id)
+    encryptionStore.unlocked = false
+    pageStore.currentPage = null
+    pageStore.pageTree = []
+    pageStore.recentPages = []
+    pageStore.trashPages = []
+    tagStore.tags = []
+    tagStore.pageTags = []
+    backlinkStore.backlinks = []
+    propertyStore.properties = []
+    historyStore.revisions = []
+    historyStore.favorites = []
+    historyStore.currentFavoriteIds = new Set()
+    discoveryStore.tagGroups = []
+    discoveryStore.ungroupedTags = []
+    discoveryStore.relatedPages = []
+    attachmentStore.attachments = []
+    searchStore.smartFolderPages = []
+    templateStore.templates = []
+    syncStore.status = null
+    syncStore.pendingCount = 0
+    syncStore.error = null
+    settingsStore.resetWorkspaceSettings()
     await this.load()
     await pageStore.loadPageTree()
+    await Promise.all([
+      pageStore.loadRecentPages(),
+      tagStore.loadTags(),
+      historyStore.loadFavorites(),
+      searchStore.loadSavedSearches(),
+      searchStore.loadSmartFolders(),
+      discoveryStore.loadTagGroups(),
+      discoveryStore.loadUngroupedTags(),
+      settingsStore.loadSettings(),
+    ])
+    await encryptionStore.checkStatus()
   }
 }
 

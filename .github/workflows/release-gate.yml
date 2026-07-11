@@ -20,7 +20,7 @@ jobs:
           components: clippy, rustfmt
 
       - name: Install frontend dependencies
-        run: npm install
+        run: npm ci
 
       - name: Install Rust release tools
         run: |
@@ -52,3 +52,40 @@ jobs:
           path: |
             src-tauri/target/release/bundle/dmg/*.dmg
             src-tauri/target/release/bundle/dmg/SHA256SUMS
+
+  windows-linux-bundles:
+    name: ${{ matrix.label }} unsigned bundle
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            label: Windows
+          - os: ubuntu-22.04
+            label: Linux
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Linux system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev librsvg2-dev patchelf
+
+      - run: npm ci
+      - run: cargo install tauri-cli --version 2.11.4 --locked
+      - run: npm test
+      - run: npm run check
+      - run: npm run tauri:build
+
+      - name: Upload unsigned packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: 900notes-${{ runner.os }}-unsigned
+          path: src-tauri/target/release/bundle/**

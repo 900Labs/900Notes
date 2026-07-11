@@ -1,4 +1,6 @@
+use rusqlite::types::{Value, ValueRef};
 use rusqlite::{params, Connection, OptionalExtension};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
 use thiserror::Error;
@@ -29,6 +31,28 @@ pub enum DbError {
 
 pub struct Database {
     conn: Connection,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "type", content = "value", rename_all = "lowercase")]
+pub enum BackupValue {
+    Null,
+    Integer(i64),
+    Real(f64),
+    Text(String),
+    Blob(Vec<u8>),
+}
+
+impl BackupValue {
+    fn to_sql_value(&self) -> Value {
+        match self {
+            Self::Null => Value::Null,
+            Self::Integer(value) => Value::Integer(*value),
+            Self::Real(value) => Value::Real(*value),
+            Self::Text(value) => Value::Text(value.clone()),
+            Self::Blob(value) => Value::Blob(value.clone()),
+        }
+    }
 }
 
 impl Database {
@@ -1188,6 +1212,32 @@ impl Database {
         Ok(result)
     }
 
+    pub fn get_pages_for_tag(&self, tag_id: &str) -> Result<Vec<PageMetadata>, DbError> {
+        let mut stmt = self.conn.prepare(
+            "SELECT p.id, p.parent_id, p.title, p.icon, p.cover_color, p.created_at,
+                    p.updated_at, p.deleted_at, p.pinned, p.sort_order
+             FROM pages p
+             JOIN page_tags pt ON pt.page_id = p.id
+             WHERE pt.tag_id = ?1 AND p.deleted_at IS NULL
+             ORDER BY p.updated_at DESC",
+        )?;
+        let rows = stmt.query_map(params![tag_id], |row| {
+            Ok(PageMetadata {
+                id: row.get(0)?,
+                parent_id: row.get(1)?,
+                title: row.get(2)?,
+                icon: row.get(3)?,
+                cover_color: row.get(4)?,
+                created_at: row.get(5)?,
+                updated_at: row.get(6)?,
+                deleted_at: row.get(7)?,
+                pinned: row.get::<_, i64>(8)? != 0,
+                sort_order: row.get(9)?,
+            })
+        })?;
+        rows.collect::<Result<Vec<_>, _>>().map_err(DbError::from)
+    }
+
     pub fn set_page_tags(&self, page_id: &str, tag_ids: &[String]) -> Result<(), DbError> {
         self.conn
             .execute("DELETE FROM page_tags WHERE page_id = ?1", params![page_id])?;
@@ -1337,6 +1387,138 @@ impl Database {
 
     pub fn conn_execute(&self, sql: &str, params: &[&dyn rusqlite::ToSql]) -> Result<(), DbError> {
         self.conn.execute(sql, params)?;
+        Ok(())
+    }
+
+    pub fn export_table(
+        &self,
+        table: &str,
+    ) -> Result<Vec<std::collections::BTreeMap<String, BackupValue>>, DbError> {
+        let mut stmt = self.conn.prepare(&format!("SELECT * FROM {table}"))?;
+        let columns = stmt
+            .column_names()
+            .into_iter()
+            .map(str::to_string)
+            .collect::<Vec<_>>();
+        let rows = stmt.query_map([], |row| {
+            let mut output = std::collections::BTreeMap::new();
+            for (index, column) in columns.iter().enumerate() {
+                let value = match row.get_ref(index)? {
+                    ValueRef::Null => BackupValue::Null,
+                    ValueRef::Integer(value) => BackupValue::Integer(value),
+                    ValueRef::Real(value) => BackupValue::Real(value),
+                    ValueRef::Text(value) => {
+                        BackupValue::Text(String::from_utf8_lossy(value).into_owned())
+                    }
+                    ValueRef::Blob(value) => BackupValue::Blob(value.to_vec()),
+                };
+                output.insert(column.clone(), value);
+            }
+            Ok(output)
+        })?;
+        rows.collect::<Result<Vec<_>, _>>().map_err(DbError::from)
+    }
+
+    pub fn import_table_rows(
+        &self,
+        table: &str,
+        rows: &[std::collections::BTreeMap<String, BackupValue>],
+    ) -> Result<(), DbError> {
+        let mut schema = self.conn.prepare(&format!("PRAGMA table_info({table})"))?;
+        let allowed_columns = schema
+            .query_map([], |row| row.get::<_, String>(1))?
+            .collect::<Result<std::collections::HashSet<_>, _>>()?;
+        for row in rows {
+            if row.is_empty() {
+                continue;
+            }
+            let columns = row.keys().cloned().collect::<Vec<_>>();
+            if columns
+                .iter()
+                .any(|column| !allowed_columns.contains(column))
+            {
+                return Err(DbError::InvalidInput(format!(
+                    "Backup contains an invalid column for {table}"
+                )));
+            }
+            let placeholders = (1..=columns.len())
+                .map(|index| format!("?{index}"))
+                .collect::<Vec<_>>()
+                .join(", ");
+            let sql = format!(
+                "INSERT INTO {table} ({}) VALUES ({placeholders})",
+                columns.join(", ")
+            );
+            let values = columns
+                .iter()
+                .map(|column| row[column].to_sql_value())
+                .collect::<Vec<_>>();
+            self.conn
+                .execute(&sql, rusqlite::params_from_iter(values))?;
+        }
+        Ok(())
+    }
+
+    pub fn validate_backup_rows(
+        &self,
+        table: &str,
+        rows: &[std::collections::BTreeMap<String, BackupValue>],
+    ) -> Result<(), DbError> {
+        let mut schema = self.conn.prepare(&format!("PRAGMA table_info({table})"))?;
+        let columns = schema
+            .query_map([], |row| {
+                Ok((
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?.to_ascii_uppercase(),
+                    row.get::<_, i64>(3)? != 0,
+                    row.get::<_, i64>(5)? != 0,
+                ))
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+        let expected = columns
+            .iter()
+            .map(|(name, _, _, _)| name.as_str())
+            .collect::<std::collections::HashSet<_>>();
+
+        for row in rows {
+            let actual = row
+                .keys()
+                .map(String::as_str)
+                .collect::<std::collections::HashSet<_>>();
+            if actual != expected {
+                return Err(DbError::InvalidInput(format!(
+                    "Backup row for {table} has missing or unexpected columns"
+                )));
+            }
+            for (name, declared_type, not_null, primary_key) in &columns {
+                let value = &row[name];
+                if matches!(value, BackupValue::Null) {
+                    if *not_null || *primary_key {
+                        return Err(DbError::InvalidInput(format!(
+                            "Backup column {table}.{name} cannot be null"
+                        )));
+                    }
+                    continue;
+                }
+                let valid = if declared_type.contains("INT") {
+                    matches!(value, BackupValue::Integer(_))
+                } else if declared_type.contains("REAL")
+                    || declared_type.contains("FLOA")
+                    || declared_type.contains("DOUB")
+                {
+                    matches!(value, BackupValue::Real(_) | BackupValue::Integer(_))
+                } else if declared_type.contains("BLOB") || declared_type.is_empty() {
+                    matches!(value, BackupValue::Blob(_))
+                } else {
+                    matches!(value, BackupValue::Text(_))
+                };
+                if !valid {
+                    return Err(DbError::InvalidInput(format!(
+                        "Backup column {table}.{name} has the wrong value type"
+                    )));
+                }
+            }
+        }
         Ok(())
     }
 
@@ -2889,27 +3071,86 @@ fn escape_html(value: &str) -> String {
 }
 
 fn extract_wiki_links(content: &str) -> Vec<String> {
-    let mut links = Vec::new();
-    let mut chars = content.chars().peekable();
-    let mut buffer = String::new();
-    let mut in_link = false;
-
-    while let Some(c) = chars.next() {
-        if c == '[' && chars.peek() == Some(&'[') {
-            chars.next();
-            in_link = true;
-            buffer.clear();
-        } else if c == ']' && chars.peek() == Some(&']') && in_link {
-            chars.next();
-            in_link = false;
-            let trimmed = buffer.trim().to_string();
-            if !trimmed.is_empty() {
-                links.push(trimmed);
+    fn collect_structured(value: &serde_json::Value, links: &mut Vec<String>) {
+        match value {
+            serde_json::Value::Object(map) => {
+                if map.get("type").and_then(|v| v.as_str()) == Some("wiki_link") {
+                    if let Some(title) = map
+                        .get("attrs")
+                        .and_then(|v| v.get("title"))
+                        .and_then(|v| v.as_str())
+                    {
+                        let title = title.trim();
+                        if !title.is_empty() {
+                            links.push(title.to_string());
+                        }
+                    }
+                }
+                for value in map.values() {
+                    collect_structured(value, links);
+                }
             }
-        } else if in_link {
-            buffer.push(c);
+            serde_json::Value::Array(values) => {
+                for value in values {
+                    collect_structured(value, links);
+                }
+            }
+            _ => {}
         }
     }
+
+    fn collect_legacy(text: &str, links: &mut Vec<String>) {
+        let mut chars = text.chars().peekable();
+        let mut buffer = String::new();
+        let mut in_link = false;
+
+        while let Some(c) = chars.next() {
+            if c == '[' && chars.peek() == Some(&'[') {
+                chars.next();
+                in_link = true;
+                buffer.clear();
+            } else if c == ']' && chars.peek() == Some(&']') && in_link {
+                chars.next();
+                in_link = false;
+                let trimmed = buffer.trim().to_string();
+                if !trimmed.is_empty() {
+                    links.push(trimmed);
+                }
+            } else if in_link {
+                buffer.push(c);
+            }
+        }
+    }
+
+    let mut links = Vec::new();
+    if let Ok(value) = serde_json::from_str::<serde_json::Value>(content) {
+        collect_structured(&value, &mut links);
+        fn collect_text(value: &serde_json::Value, links: &mut Vec<String>) {
+            match value {
+                serde_json::Value::Object(map) => {
+                    if let Some(text) = map.get("text").and_then(|v| v.as_str()) {
+                        collect_legacy(text, links);
+                    }
+                    for (key, child) in map {
+                        if key != "text" {
+                            collect_text(child, links);
+                        }
+                    }
+                }
+                serde_json::Value::Array(values) => {
+                    for value in values {
+                        collect_text(value, links);
+                    }
+                }
+                _ => {}
+            }
+        }
+        collect_text(&value, &mut links);
+    } else {
+        collect_legacy(content, &mut links);
+    }
+    links.sort_by_key(|title| title.to_lowercase());
+    links.dedup_by(|a, b| a.eq_ignore_ascii_case(b));
     links
 }
 
@@ -3014,6 +3255,9 @@ mod tests {
         let tags = db.get_page_tags(&page.id).unwrap();
         assert_eq!(tags.len(), 1);
         assert_eq!(tags[0].name, "important");
+        let pages = db.get_pages_for_tag(&tag.id).unwrap();
+        assert_eq!(pages.len(), 1);
+        assert_eq!(pages[0].id, page.id);
     }
 
     #[test]
@@ -3046,6 +3290,32 @@ mod tests {
         let backlinks = db.get_backlinks(&target.id).unwrap();
         assert_eq!(backlinks.len(), 1);
         assert_eq!(backlinks[0].source_page_id, source.id);
+    }
+
+    #[test]
+    fn test_rebuild_links_from_canonical_editor_node() {
+        let db = test_db();
+        let target = db
+            .create_page(&CreatePageInput {
+                parent_id: None,
+                title: "Target Page".to_string(),
+                content: None,
+                icon: None,
+            })
+            .unwrap();
+        let content = r#"{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"See "},{"type":"wiki_link","attrs":{"title":"Target Page","pageId":"target-id"}}]}]}"#;
+        let source = db
+            .create_page(&CreatePageInput {
+                parent_id: None,
+                title: "Source Page".to_string(),
+                content: Some(content.to_string()),
+                icon: None,
+            })
+            .unwrap();
+        db.rebuild_links_for_page(&source.id, content).unwrap();
+        let backlinks = db.get_backlinks(&target.id).unwrap();
+        assert_eq!(backlinks.len(), 1);
+        assert_eq!(backlinks[0].link_text, "Target Page");
     }
 
     #[test]

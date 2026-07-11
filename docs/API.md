@@ -260,9 +260,9 @@ Get all settings as key-value pairs.
 | Key | Default | Values |
 |-----|---------|--------|
 | `theme` | `system` | `light`, `dark`, `system` |
-| `language` | `en` | `en`, `fr`, `es`, `sw`, `hi`, `ar` |
-| `font_size` | `16` | `12`–`24` |
-| `line_spacing` | `1.5` | `1.0`–`2.5` |
+| `language` | `en` | `en`, `fr`, `es`, `sw`, `hi`, `ar`, `pt`, `bn`, `ur`, `am` |
+| `font_size` | `16` | `12`-`24` |
+| `line_spacing` | `1.5` | `1.0`-`2.5` |
 | `default_block_type` | `paragraph` | any block type name |
 
 ---
@@ -270,12 +270,12 @@ Get all settings as key-value pairs.
 ## Export & Import
 
 ### `export_workspace`
-Export the entire workspace (all pages, tags, page-tag associations, settings) as a JSON string.
+Export a versioned exact-replace backup as JSON. It contains pages including trash, tags and relations, properties, templates, saved searches, smart folders, revisions, favorites, tag groups and members, attachments, audio metadata, and settings. It excludes passphrases, clipper tokens, sync state, and plugin code.
 
 **Returns**: `string` (JSON)
 
 ### `import_workspace`
-Import a workspace from a JSON string. Replaces existing data (INSERT OR REPLACE).
+Validate and restore a version 1.0.0 workspace backup. Restore replaces the active workspace inside one transaction, clears stale sync and CRDT state, and rejects incomplete, malformed, or unsupported backups before mutation.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
@@ -898,13 +898,13 @@ Deletes an audio note record (does not delete the associated attachment).
 ### Sync Commands
 
 #### `start_sync`
-Starts local network sync — mDNS discovery + TCP server.
+Starts local network sync - mDNS discovery + TCP server.
 - **Args**: `deviceName?: string`, `port?: number` (default 9876), `pairingSecret: string` (minimum 12 characters)
 - **Returns**: `SyncStatus` (`enabled`, `deviceId`, `deviceName`, `port`, `peers`, `lastSync`)
 - **Details**: Registers `_900notes._tcp.local.` mDNS service, starts TCP listener, begins browsing for peers, and encrypts sync handshakes with AES-256-GCM using the pairing secret. Peers must use the same pairing secret.
 
 #### `stop_sync`
-Stops all sync activity — shuts down mDNS daemon and TCP server.
+Stops all sync activity - shuts down mDNS daemon and TCP server.
 - **Args**: none
 - **Returns**: `void`
 
@@ -1037,12 +1037,12 @@ Permanently deletes all trashed pages by overwriting their content with zeros, p
 #### `get_page_tree_metadata`
 Returns the page tree with lightweight metadata only (no content field). Use this instead of `get_page_tree` for sidebar rendering and other UI that doesn't need page content.
 - **Args**: none
-- **Returns**: `PageTreeNodeMeta[]` — each node has `PageMetadata` (id, parentId, title, icon, coverColor, createdAt, updatedAt, deletedAt, pinned, sortOrder) and `children`
+- **Returns**: `PageTreeNodeMeta[]` - each node has `PageMetadata` (id, parentId, title, icon, coverColor, createdAt, updatedAt, deletedAt, pinned, sortOrder) and `children`
 
 #### `get_page_titles`
 Returns all page IDs and titles (no content). Use this for wiki-link autocomplete and other title-only lookups.
 - **Args**: none
-- **Returns**: `[string, string][]` — array of `[id, title]` tuples
+- **Returns**: `[string, string][]` - array of `[id, title]` tuples
 
 #### `get_recent_pages_metadata`
 Returns recent pages with lightweight metadata only (no content field). Use this instead of `get_recent_pages` for sidebar recent list.

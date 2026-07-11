@@ -52,7 +52,40 @@ impl WorkspaceService {
     pub fn save_registry(&self, registry: &WorkspaceRegistry) -> Result<(), String> {
         let content = serde_json::to_string_pretty(registry)
             .map_err(|e| format!("Serialize registry: {e}"))?;
-        std::fs::write(&self.registry_path, content).map_err(|e| format!("Write registry: {e}"))
+        let temp = self.registry_path.with_extension("json.tmp");
+        let backup = self.registry_path.with_extension("json.previous");
+        std::fs::write(&temp, content).map_err(|e| format!("Write registry: {e}"))?;
+        if backup.exists() {
+            let _ = std::fs::remove_file(&backup);
+        }
+        if self.registry_path.exists() {
+            std::fs::rename(&self.registry_path, &backup)
+                .map_err(|e| format!("Stage registry replacement: {e}"))?;
+        }
+        if let Err(error) = std::fs::rename(&temp, &self.registry_path) {
+            if backup.exists() {
+                let _ = std::fs::rename(&backup, &self.registry_path);
+            }
+            return Err(format!("Replace registry: {error}"));
+        }
+        let _ = std::fs::remove_file(backup);
+        Ok(())
+    }
+
+    pub fn active_workspace(&self) -> Result<Workspace, String> {
+        let registry = self.load_registry()?;
+        registry
+            .workspaces
+            .into_iter()
+            .find(|workspace| workspace.id == registry.active_id)
+            .ok_or_else(|| "Active workspace is missing from the registry".to_string())
+    }
+
+    pub fn workspace_db_path(&self, workspace: &Workspace) -> PathBuf {
+        self.registry_path
+            .parent()
+            .unwrap_or(Path::new("."))
+            .join(&workspace.db_path)
     }
 
     pub fn create_workspace(&self, name: &str) -> Result<Workspace, String> {
@@ -90,6 +123,13 @@ impl WorkspaceService {
         if db_path.exists() {
             std::fs::remove_file(&db_path).map_err(|e| format!("Delete workspace DB: {e}"))?;
         }
+        for suffix in ["enc", "meta"] {
+            let companion = PathBuf::from(format!("{}.{}", db_path.display(), suffix));
+            if companion.exists() {
+                std::fs::remove_file(&companion)
+                    .map_err(|e| format!("Delete workspace encryption file: {e}"))?;
+            }
+        }
 
         registry.workspaces.retain(|w| w.id != id);
         self.save_registry(&registry)?;
@@ -120,5 +160,48 @@ impl WorkspaceService {
         let result = workspace.clone();
         self.save_registry(&registry)?;
         Ok(result)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn active_workspace_survives_service_restart() {
+        let root =
+            std::env::temp_dir().join(format!("900notes-workspace-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&root).unwrap();
+        let service = WorkspaceService::new(&root);
+        let created = service.create_workspace("Research").unwrap();
+        service.switch_workspace(&created.id).unwrap();
+
+        let restarted = WorkspaceService::new(&root);
+        assert_eq!(restarted.active_workspace().unwrap().id, created.id);
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn failed_registry_write_does_not_change_active_workspace() {
+        let root =
+            std::env::temp_dir().join(format!("900notes-workspace-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&root).unwrap();
+        let service = WorkspaceService::new(&root);
+        let created = service.create_workspace("Research").unwrap();
+        std::fs::create_dir(root.join("workspaces.json.tmp")).unwrap();
+        assert!(service.switch_workspace(&created.id).is_err());
+        assert_eq!(service.active_workspace().unwrap().id, "default");
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn unknown_workspace_does_not_change_registry() {
+        let root =
+            std::env::temp_dir().join(format!("900notes-workspace-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&root).unwrap();
+        let service = WorkspaceService::new(&root);
+        assert!(service.switch_workspace("missing").is_err());
+        assert_eq!(service.active_workspace().unwrap().id, "default");
+        std::fs::remove_dir_all(root).unwrap();
     }
 }

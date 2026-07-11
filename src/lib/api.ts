@@ -116,6 +116,9 @@ export const deleteTag = (id: string): Promise<void> =>
 export const getPageTags = (pageId: string): Promise<Tag[]> =>
   invoke('get_page_tags', { pageId })
 
+export const getPagesForTag = (tagId: string): Promise<PageMetadata[]> =>
+  invoke('get_pages_for_tag', { tagId })
+
 export const setPageTags = (pageId: string, tagIds: string[]): Promise<void> =>
   invoke('set_page_tags', { pageId, tagIds })
 

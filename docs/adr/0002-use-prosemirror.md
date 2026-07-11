@@ -40,19 +40,19 @@ Use **ProseMirror** as the editor framework. ProseMirror is a toolkit for buildi
 - Bundle size: ~100KB gzipped for the core + plugins
 
 ### Neutral
-- The document model is a tree of nodes, not HTML — this is a different mental model from contenteditable-based editors
+- The document model is a tree of nodes, not HTML - this is a different mental model from contenteditable-based editors
 
 ## Alternatives Considered
 
-1. **TipTap (built on ProseMirror)** — Rejected to avoid an extra abstraction layer. We need fine-grained control over the schema and plugins, which ProseMirror provides directly.
+1. **TipTap (built on ProseMirror)** - Rejected to avoid an extra abstraction layer. We need fine-grained control over the schema and plugins, which ProseMirror provides directly.
 
-2. **CodeMirror + Markdown** — Rejected because we want WYSIWYG, not a split-pane markdown editor. The target users (students, researchers in developing economies) benefit from a visual editor.
+2. **CodeMirror + Markdown** - Rejected because we want WYSIWYG, not a split-pane markdown editor. The target users (students, researchers in developing economies) benefit from a visual editor.
 
-3. **Quill** — Rejected because its document model (Delta) is less flexible than ProseMirror's schema. Custom node types like wiki links are harder to implement.
+3. **Quill** - Rejected because its document model (Delta) is less flexible than ProseMirror's schema. Custom node types like wiki links are harder to implement.
 
-4. **Slate** — Rejected because it's React-specific. We use Svelte 5.
+4. **Slate** - Rejected because it's React-specific. We use Svelte 5.
 
-5. **Lexical** — Rejected because it's React-specific (Meta's framework). We use Svelte 5.
+5. **Lexical** - Rejected because it's React-specific (Meta's framework). We use Svelte 5.
 
 ## References
 

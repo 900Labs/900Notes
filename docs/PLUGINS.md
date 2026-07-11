@@ -129,8 +129,8 @@ plugin.registerHook('pageSave', (pageId) => {
 
 See `examples/plugins/`:
 
-- **callout** — Adds a callout block type with variants (info, warning, tip, danger)
-- **wordcount** — Adds a word count command and logs word count on save
+- **callout** - Adds a callout block type with variants (info, warning, tip, danger)
+- **wordcount** - Adds a word count command and logs word count on save
 
 ## Security
 

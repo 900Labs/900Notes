@@ -20,6 +20,7 @@
   let activeTab = $derived(settingsStore.sidebarTab) as 'pages' | 'tags' | 'recent' | 'trash' | 'smart' | 'favorites'
   let collapsed = $state(false)
   let searchResults = $state<SearchResult[]>([])
+  let tagResults = $state<PageMetadata[]>([])
   let showCreateSearch = $state(false)
   let newSearchName = $state('')
   let showCreateFolder = $state(false)
@@ -74,6 +75,7 @@
 
   async function handleTagFilter(tagId: string | null) {
     settingsStore.activeTagFilter = tagId
+    tagResults = tagId ? await api.getPagesForTag(tagId) : []
   }
 
   async function handleExecuteSearch(id: string) {
@@ -165,27 +167,27 @@
       <button
         onclick={() => (settingsStore.sidebarTab = 'pages')}
         class="px-2 py-1.5 rounded-md text-xs font-medium text-left {activeTab === 'pages' ? 'bg-accent/10 text-accent' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'}"
-      >Pages</button>
+      >{$t('sidebar.pages')}</button>
       <button
         onclick={() => (settingsStore.sidebarTab = 'tags')}
         class="px-2 py-1.5 rounded-md text-xs font-medium text-left {activeTab === 'tags' ? 'bg-accent/10 text-accent' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'}"
-      >Tags</button>
+      >{$t('sidebar.tags')}</button>
       <button
         onclick={() => (settingsStore.sidebarTab = 'recent')}
         class="px-2 py-1.5 rounded-md text-xs font-medium text-left {activeTab === 'recent' ? 'bg-accent/10 text-accent' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'}"
-      >Recent</button>
+      >{$t('sidebar.recent')}</button>
       <button
         onclick={() => { settingsStore.sidebarTab = 'trash'; pageStore.loadTrash() }}
         class="px-2 py-1.5 rounded-md text-xs font-medium text-left {activeTab === 'trash' ? 'bg-accent/10 text-accent' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'}"
-      >Trash</button>
+      >{$t('sidebar.trash')}</button>
       <button
         onclick={() => { settingsStore.sidebarTab = 'smart'; searchStore.loadSavedSearches(); searchStore.loadSmartFolders() }}
         class="px-2 py-1.5 rounded-md text-xs font-medium text-left {activeTab === 'smart' ? 'bg-accent/10 text-accent' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'}"
-      >Smart</button>
+      >{$t('smartFolder.title')}</button>
       <button
         onclick={() => { settingsStore.sidebarTab = 'favorites'; historyStore.loadFavorites() }}
         class="px-2 py-1.5 rounded-md text-xs font-medium text-left {activeTab === 'favorites' ? 'bg-accent/10 text-accent' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'}"
-      >Favorites</button>
+      >{$t('favorites.title')}</button>
     </div>
 
     <!-- Content -->
@@ -203,6 +205,22 @@
         />
       {:else if activeTab === 'tags'}
         <TagList onFilter={handleTagFilter} activeFilter={settingsStore.activeTagFilter} />
+        {#if settingsStore.activeTagFilter}
+          <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 space-y-0.5">
+            {#each tagResults as page (page.id)}
+              <button
+                onclick={() => handleSelectPage(page.id)}
+                class="w-full text-left px-2 py-1.5 rounded text-sm hover:bg-gray-200 dark:hover:bg-gray-700 truncate"
+              >
+                {#if page.icon}<span class="mr-1">{page.icon}</span>{/if}
+                {page.title || $t('editor.titlePlaceholder')}
+              </button>
+            {/each}
+            {#if tagResults.length === 0}
+              <p class="text-xs text-gray-400 px-2 py-3">{$t('search.noResults')}</p>
+            {/if}
+          </div>
+        {/if}
       {:else if activeTab === 'recent'}
         <div class="space-y-0.5">
           {#each pageStore.recentPages as page (page.id)}
@@ -215,7 +233,7 @@
             </button>
           {/each}
           {#if pageStore.recentPages.length === 0}
-            <p class="text-xs text-gray-400 px-2 py-4">No recent pages</p>
+            <p class="text-xs text-gray-400 px-2 py-4">{$t('search.noResults')}</p>
           {/if}
         </div>
       {:else if activeTab === 'trash'}

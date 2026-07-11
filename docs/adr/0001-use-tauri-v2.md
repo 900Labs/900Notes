@@ -37,18 +37,18 @@ Use **Tauri v2** as the desktop shell. Tauri uses the system's native webview (W
 - Some web APIs may not be available in all webviews
 
 ### Neutral
-- Rust backend is required (not a negative for us — we want Rust)
+- Rust backend is required (not a negative for us - we want Rust)
 - Frontend must be a web framework (Svelte 5 in our case)
 
 ## Alternatives Considered
 
-1. **Electron** — Rejected due to large binary size (~150MB), high memory usage, and Chromium dependency. Not suitable for low-resource hardware.
+1. **Electron** - Rejected due to large binary size (~150MB), high memory usage, and Chromium dependency. Not suitable for low-resource hardware.
 
-2. **Native app (Qt/GTK)** — Rejected due to development speed. Building a rich-text editor in native toolkits is significantly more effort than using ProseMirror in a webview.
+2. **Native app (Qt/GTK)** - Rejected due to development speed. Building a rich-text editor in native toolkits is significantly more effort than using ProseMirror in a webview.
 
-3. **PWA (Progressive Web App)** — Rejected because it requires a browser and doesn't provide reliable local file system access. Also can't guarantee offline operation on all platforms.
+3. **PWA (Progressive Web App)** - Rejected because it requires a browser and doesn't provide reliable local file system access. Also can't guarantee offline operation on all platforms.
 
-4. **Flutter Desktop** — Rejected due to smaller desktop ecosystem and lack of Rust backend integration. Also requires bundling the Flutter engine (~20MB).
+4. **Flutter Desktop** - Rejected due to smaller desktop ecosystem and lack of Rust backend integration. Also requires bundling the Flutter engine (~20MB).
 
 ## References
 

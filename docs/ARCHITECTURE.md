@@ -62,7 +62,7 @@ Following the 900Word pattern:
 
 1. **ProseMirror** is the editing surface in the frontend
 2. The document model is a JSON object stored as text in SQLite
-3. **Rust** owns the persistence and link extraction — content is sanitized before storage
+3. **Rust** owns the persistence and link extraction - content is sanitized before storage
 4. The schema supports: paragraphs, headings (H1-H3), lists, to-dos, code blocks, blockquotes, dividers, tables, wiki links, and inline marks (bold, italic, underline, strike, code, link)
 
 ## Offline Model
