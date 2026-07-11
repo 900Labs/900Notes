@@ -1,205 +1,58 @@
-# 900Notes Full Audit Report
+# Public Release Audit
 
-**Date**: 2026-06-29  
-**Scope**: All 20 sprints — security, error handling, dead code, integration, smoke tests
+Release target: 1.6.0
 
----
+Status: Code-approved release candidate. Local automated gates and the independent Builder/Reviewer cycle are green. A public tag still requires the repository-history privacy decision, cross-platform package jobs, and the manual data-integrity checks below.
 
-## 1. Security Review
+This audit focuses on whether people can install, understand, and trust 900Notes as an open source notes editor. It gives priority to note integrity, workspace isolation, backup portability, accurate documentation, and repeatable project checks.
 
-### Critical Issues Found & Fixed
+## Release blockers addressed
 
-| # | Issue | Severity | Status |
-|---|-------|----------|--------|
-| S1 | **Weak key derivation** — `derive_key()` used a single SHA-256 pass, vulnerable to brute-force. Replaced with 100,000-iteration iterative hashing. | Critical | ✅ Fixed |
-| S2 | **Non-cryptographic RNG** — `random_bytes()` used UUID v4 XOR for salt/nonce generation. Replaced with `getrandom` CSPRNG. | Critical | ✅ Fixed |
-| S3 | **Sharing service same weaknesses** — `sharing.rs` had its own `derive_key()` with single SHA-256 pass and used UUID for salt/nonce. Fixed with same iterative hashing + CSPRNG. | Critical | ✅ Fixed |
-| S4 | **XSS in Mermaid error rendering** — Error message injected into `innerHTML` without escaping. Fixed to use `textContent`. | High | ✅ Fixed |
+- Editor saves keep the page ID that produced the edit. A delayed save cannot be redirected into a newly opened page.
+- Save failures are visible and pending edits flush during navigation and component shutdown.
+- Encrypted workspaces retain the newest recovery copy after an interrupted session and refresh the encrypted snapshot on a clean shutdown.
+- Passphrase changes preserve the only usable database and update the active in-memory passphrase.
+- Startup opens the workspace selected in the registry. Workspace changes clear and reload workspace-scoped frontend, sync, and CRDT state.
+- Wiki links use canonical ProseMirror nodes. Backlink indexing also understands legacy `[[title]]` text.
+- Workspace backups include user-created notes and trash, tags, properties, attachments, audio, templates, searches, smart folders, favorites, tag groups, revisions, and settings.
+- Backup restore validates the format and version, warns the user, and performs exact replacement in a transaction.
+- Tag filters show matching pages.
+- External importers report partial failures instead of presenting partial work as a complete success.
+- Workspace deletion requires confirmation.
 
-### Security Notes (Acceptable)
+## Automated evidence
 
-- **KaTeX `innerHTML`**: KaTeX has built-in HTML escaping — safe by design.
-- **Mermaid `innerHTML` with SVG**: Mermaid sanitizes its SVG output — acceptable for local-first app.
-- **Plugin loader `new Function()`**: Intentional design for JS plugin loading. Plugins run in webview context with full access. Documented in `docs/PLUGINS.md` as a known limitation. Future: sandboxed execution.
-- **SQL injection**: All DB queries use parameterized statements (`params![]`). No string-formatted SQL found.
-- **Sync binds to 0.0.0.0**: Acceptable for local network sync. Documented behavior.
+The release gate covers:
 
-### Remaining Security Recommendations
+- Frontend unit tests
+- Svelte and TypeScript checks
+- Desktop and mobile production builds
+- Rust formatting, Clippy, unit tests, and build
+- npm and Rust dependency audits
+- Translation-key parity across ten locales
+- Scans for local computer paths, high-confidence secrets, generated artifacts, and invalid binary assets
+- CI smoke tests on Linux, macOS, and Windows
 
-1. **PBKDF2/Argon2**: The iterative SHA-256 is better than single-pass but not as strong as PBKDF2 or Argon2. Consider migrating to `argon2` crate in the future.
-2. **Plugin sandboxing**: Consider Web Workers or iframe sandboxing for plugin execution.
-3. **Sync pairing hardening**: Sync now requires a shared pairing secret and encrypts handshakes. Future work should replace the text secret with QR-code pairing or a PAKE/Noise-based authenticated flow.
+Run `./scripts/verify-local.sh` and `./scripts/verify-public-release.sh` before creating a release tag.
 
----
+The 2026-07-11 release-candidate run passed 14 frontend tests, 43 Rust tests, Svelte and TypeScript checks, Rust formatting and Clippy, desktop and mobile builds, npm audit, RustSec audit with the documented upstream warnings, privacy checks, and macOS app and DMG packaging. The independent Reviewer reported no remaining code findings. The unsigned macOS DMG SHA-256 is `3b85ae60efc8ed635adfe511d7c88536441a22e9b46628dad62e77704ba83f19`.
 
-## 2. Error Handling & Panic Audit
+## Manual release checks
 
-### Issues Found & Fixed
+1. Create and edit two pages quickly, switch between them, restart, and verify both contain the correct text.
+2. Create a workspace, switch to it, restart, and verify it remains active.
+3. Back up a disposable workspace containing a trashed page, property, favorite, tag, and attachment. Restore it and compare the result.
+4. Enable encryption, edit a note, force-stop the app, unlock it, and verify the latest edit remains.
+5. Change the passphrase and verify the old passphrase fails after a clean restart.
+6. Create a wiki link from autocomplete and verify backlinks and graph edges.
+7. Select a tag and verify only matching pages appear.
+8. Import a deliberately mixed valid and invalid external export and verify errors are visible.
+9. Install each unsigned release candidate on its target platform and document the operating system warning.
 
-| # | Issue | Severity | Status |
-|---|-------|----------|--------|
-| E1 | **5x `Mutex::unwrap()` in `sync.rs`** — Would panic on poisoned mutex (e.g., if a sync thread panics). Replaced with `unwrap_or_else(\|e\| e.into_inner())` for poison recovery. | High | ✅ Fixed |
+## Known boundaries
 
-### Acceptable `unwrap()`/`expect()` (5 in `lib.rs`)
-
-- `app_data_dir().expect()` — App can't function without data dir, fail-fast is correct.
-- `Database::open().expect()` — App can't function without DB, fail-fast is correct.
-- `CrdtService::load_from_db().expect()` — Same reasoning.
-- `create_dir_all().expect()` — Same reasoning.
-- `generate_context!().expect()` — Tauri runtime, fail-fast is correct.
-
----
-
-## 3. Dead Code & Unused Imports
-
-### Issues Found & Fixed
-
-| # | Issue | Status |
-|---|-------|--------|
-| D1 | Unused `Arc` and `Mutex` imports in `commands/plugins.rs` | ✅ Removed |
-| D2 | Non-snake-case `pagesCreated` field in `ImportResultResponse` | ✅ Fixed with `#[serde(rename_all = "camelCase")]` |
-| D3 | `pageTitles` in `EditorView.svelte` not using `$state()` | ✅ Fixed |
-| D4 | `nodes` in `GraphView.svelte` not using `$state()` | ✅ Fixed |
-
-### Remaining Warnings (21, all pre-existing)
-
-- 10x a11y warnings (click handlers on divs, ARIA roles, autofocus) — cosmetic, not blocking
-- 3x self-closing HTML tag warnings — cosmetic
-- 2x "reference only captures initial value" — Svelte 5 reactivity nuance, not a bug
-- 6x other minor warnings
-
----
-
-## 4. Integration Check
-
-### Command Registration
-
-- **134 Tauri commands** registered in `lib.rs`
-- **134 TypeScript API wrappers** in `api.ts`
-- **All command names match** (verified via diff)
-- **All DB methods referenced by commands exist** (verified via `cargo check`)
-
-### Module Structure
-
-- All `commands/mod.rs` entries have corresponding `.rs` files
-- All `services/mod.rs` entries have corresponding `.rs` files
-- All `models/mod.rs` entries have corresponding `.rs` files
-- Frontend types in `types.ts` match Rust models (verified via `npm run check`)
-
-### Cross-Feature Integration
-
-- Plugin system uses existing DB infrastructure (no separate DB)
-- Automation API wraps existing DB methods (no new queries)
-- Importers use existing `create_page` DB method
-- Web clipper uses the localhost HTTP server and the same capture pipeline as the automation command.
-- Encryption/sharing use same `derive_key` pattern (now hardened)
-
----
-
-## 5. Smoke Test Plan
-
-### Pre-flight
-
-- [ ] `cargo check` passes with 0 warnings
-- [ ] `npm run check` passes with 0 errors
-- [ ] `npm run build` succeeds
-
-### Core Features
-
-- [ ] **App launches** — `npm run tauri dev` starts without errors
-- [ ] **Create page** — New page appears in sidebar tree
-- [ ] **Edit page** — Content saves (debounced) and persists after reload
-- [ ] **Delete page** — Page moves to trash, can be restored
-- [ ] **Search** — Command palette (`Ctrl+K`) finds pages by title and content
-- [ ] **Wiki links** — `[[Page Title]]` creates clickable links
-- [ ] **Tags** — Create tags, assign to pages, filter by tag
-
-### Rich Content
-
-- [ ] **Slash menu** — Type `/` to see block options (heading, todo, code, etc.)
-- [ ] **Code blocks** — Syntax highlighting renders
-- [ ] **Math blocks** — LaTeX renders via KaTeX
-- [ ] **Mermaid diagrams** — Diagram renders from text
-- [ ] **Attachments** — Drag-and-drop image, verify it displays
-- [ ] **Audio notes** — Record audio, verify playback
-
-### Organization
-
-- [ ] **Page tree** — Drag pages to reorder/nest
-- [ ] **Templates** — Create template, create page from template
-- [ ] **Daily note** — Click daily note button, verify today's date
-- [ ] **Smart folders** — Create saved search, verify smart folder shows results
-- [ ] **Tag groups** — Create tag group, add tags, verify grouping
-- [ ] **Graph view** — Open graph, verify nodes and edges render
-
-### Sync & Sharing
-
-- [ ] **Export workspace** — Export to JSON, verify file contents
-- [ ] **Import workspace** — Import JSON, verify pages created
-- [ ] **Share bundle** — Export pages with passphrase, import on fresh instance
-- [ ] **Sync** — Start sync on two instances with the same pairing secret, verify pages sync
-
-### Security
-
-- [ ] **Enable encryption** — Set passphrase, verify DB is encrypted
-- [ ] **Unlock database** — Restart app, enter passphrase, verify access
-- [ ] **Change passphrase** — Change, verify old passphrase fails
-- [ ] **Secure delete** — Secure delete a page, verify content is overwritten
-
-### Accessibility
-
-- [ ] **Language switch** — Change to Arabic, verify RTL layout
-- [ ] **Language switch** — Change to Urdu, verify RTL layout
-- [ ] **Language switch** — Change to Bengali, verify LTR renders correctly
-- [ ] **Theme** — Switch between light/dark/system
-- [ ] **Keyboard nav** — Tab through sidebar, editor, settings
-
-### Plugins
-
-- [ ] **Scan plugins** — Place example plugin in `plugins/` dir, scan, verify it appears
-- [ ] **Enable/disable** — Toggle plugin, verify state persists
-- [ ] **Remove plugin** — Uninstall, verify it disappears
-
-### Importers
-
-- [ ] **Evernote** — Import sample `.enex` file, verify pages created
-- [ ] **Notion** — Point to Notion export dir, verify `.md` files imported
-- [ ] **Obsidian** — Point to vault dir, verify recursive import
-- [ ] **Roam** — Import Roam JSON, verify pages created
-
-### Mobile
-
-- [ ] **Mobile build** — `npm run build:mobile` succeeds
-- [ ] **Mobile dev** — `npm run tauri:android dev` starts (requires Android SDK)
-
----
-
-## 6. Summary
-
-### Fixes Applied
-
-| Category | Issues Fixed | Critical | High | Medium |
-|----------|-------------|----------|------|--------|
-| Security | 4 | 3 | 1 | 0 |
-| Error Handling | 1 | 0 | 1 | 0 |
-| Code Quality | 4 | 0 | 0 | 4 |
-| **Total** | **9** | **3** | **2** | **4** |
-
-### Verification Results
-
-| Check | Before | After |
-|-------|--------|-------|
-| `cargo check` warnings | 3 | 0 |
-| `npm run check` errors | 0 | 0 |
-| `npm run check` warnings | 23 | 21 |
-| `npm run build` | ✅ | ✅ |
-| Command registration match | 134/134 | 134/134 |
-
-### Remaining Recommendations (Non-blocking)
-
-1. Migrate to Argon2 for key derivation (stronger than iterative SHA-256)
-2. Replace shared-secret sync pairing with QR-code pairing or a PAKE/Noise-based flow
-3. Sandbox plugin execution (Web Workers or iframe)
-4. Fix remaining 21 a11y warnings (div click handlers → buttons)
-5. Publish/sign the browser clipper and keep its local authentication model reviewed as browser-extension support matures
-6. Add automated tests (unit tests for DB, integration tests for commands)
+- Release packages require maintainer signing and notarization credentials before they can be presented as trusted signed downloads.
+- Encryption uses iterative SHA-256 rather than Argon2id. The limitation is documented and a versioned KDF migration remains future work.
+- An interrupted unlocked encrypted session leaves a plaintext recovery copy until the next successful unlock and clean shutdown. This favors note recovery after a crash.
+- Plugins execute with application access and should only be installed from trusted source code.
+- Local network sync is opt-in and should only be used on trusted networks with a strong shared pairing secret.

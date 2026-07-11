@@ -1,6 +1,6 @@
 # Contributing to 900Notes
 
-We welcome contributions from developers worldwide — especially those in the regions 900Notes serves. Every line of code from a developer in Lagos, Nairobi, Accra, or Mumbai makes this tool better for the people it's built for.
+We welcome contributions from developers worldwide - especially those in the regions 900Notes serves. Every line of code from a developer in Lagos, Nairobi, Accra, or Mumbai makes this tool better for the people it's built for.
 
 ## Setup
 
@@ -30,7 +30,7 @@ See the full [Tauri v2 prerequisites guide](https://v2.tauri.app/start/prerequis
 ```bash
 git clone https://github.com/900Labs/900Notes.git
 cd 900Notes
-npm install
+npm ci
 cargo tauri dev
 ```
 
@@ -57,7 +57,7 @@ For the full development guide, see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ### TypeScript / Svelte
 - Use TypeScript for all new files. No plain `.js` files.
-- Use Svelte 5 Runes (`$state`, `$derived`, `$effect`, `$props`) — not Svelte 4 stores.
+- Use Svelte 5 Runes (`$state`, `$derived`, `$effect`, `$props`) - not Svelte 4 stores.
 - Follow the existing pattern: stores in `src/stores/app.svelte.ts`, API calls in `src/lib/api.ts`.
 - Use TailwindCSS classes for styling. No inline styles unless dynamic values are needed.
 - All UI text must use translation keys from `src/i18n/index.ts`.
@@ -78,7 +78,7 @@ For the full development guide, see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 1. Ensure the quality gate passes: `./scripts/verify-local.sh`
 2. Fill out the PR template completely
 3. Update documentation if behavior changes
-4. Add translation keys to all 6 languages if adding UI text
+4. Add translation keys to all 10 languages if adding UI text
 5. Request review from a maintainer
 
 ## How to Contribute
@@ -102,7 +102,7 @@ For the full development guide, see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 3. Document the command in `docs/API.md`.
 
 ### Report a Bug
-Use the Bug Report template on GitHub. Include your OS, 900Notes version, and steps to reproduce. If you're on low-resource hardware, mention your specs — it helps us optimize.
+Use the Bug Report template on GitHub. Include your OS, 900Notes version, and steps to reproduce. If you're on low-resource hardware, mention your specs - it helps us optimize.
 
 ### Suggest a Feature
 Use the Feature Request template on GitHub. Explain the problem it solves and who benefits. If the feature is particularly relevant for your region, tell us why.
@@ -119,6 +119,6 @@ Use the Feature Request template on GitHub. Explain the problem it solves and wh
 
 ## Code of Conduct
 
-Be respectful. Be inclusive. We are building tools for the majority of the world — contributions from the communities we serve are especially valued.
+Be respectful. Be inclusive. We are building tools for the majority of the world - contributions from the communities we serve are especially valued.
 
 Harassment, discrimination, or dismissive behavior toward anyone based on their background, location, language proficiency, or hardware limitations will not be tolerated.

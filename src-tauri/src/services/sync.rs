@@ -14,6 +14,7 @@ const MAX_SYNC_MESSAGE_BYTES: usize = 100 * 1024 * 1024;
 
 pub struct SyncService {
     daemon: Option<ServiceDaemon>,
+    browse_thread: Option<thread::JoinHandle<()>>,
     server_thread: Option<thread::JoinHandle<()>>,
     peers: Arc<Mutex<Vec<SyncDeviceInfo>>>,
     device_id: String,
@@ -27,6 +28,7 @@ impl SyncService {
     pub fn new(device_id: &str, device_name: &str, port: u16, pairing_secret: &str) -> Self {
         SyncService {
             daemon: None,
+            browse_thread: None,
             server_thread: None,
             peers: Arc::new(Mutex::new(Vec::new())),
             device_id: device_id.to_string(),
@@ -111,7 +113,7 @@ impl SyncService {
                 }
             }
         });
-        browse_thread.thread().unpark();
+        self.browse_thread = Some(browse_thread);
 
         // Start TCP server
         *self.running.lock().map_err(|e| e.to_string())? = true;
@@ -133,8 +135,9 @@ impl SyncService {
                         let did = device_id.clone();
                         let dname = device_name.clone();
                         let secret = pairing_secret.clone();
+                        let worker_running = running.clone();
                         thread::spawn(move || {
-                            handle_sync_connection(stream, db, did, dname, secret);
+                            handle_sync_connection(stream, db, worker_running, did, dname, secret);
                         });
                     }
                     Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
@@ -155,6 +158,9 @@ impl SyncService {
         *self.running.lock().unwrap_or_else(|e| e.into_inner()) = false;
         if let Some(daemon) = self.daemon.take() {
             daemon.shutdown().ok();
+        }
+        if let Some(thread) = self.browse_thread.take() {
+            thread.join().ok();
         }
         if let Some(thread) = self.server_thread.take() {
             thread.join().ok();
@@ -241,9 +247,16 @@ impl SyncService {
     }
 }
 
+impl Drop for SyncService {
+    fn drop(&mut self) {
+        self.stop();
+    }
+}
+
 fn handle_sync_connection(
     mut stream: TcpStream,
     db: Arc<Mutex<Database>>,
+    running: Arc<Mutex<bool>>,
     device_id: String,
     device_name: String,
     pairing_secret: String,
@@ -256,42 +269,56 @@ fn handle_sync_connection(
         Err(_) => return,
     };
 
-    // Merge remote pages
-    if let Ok(db_guard) = db.lock() {
-        for remote_meta in &remote_handshake.page_metas {
-            let _ = db_guard.upsert_page_from_sync(remote_meta);
-        }
-
-        // Send our pages back
-        let pages = match db_guard.get_all_pages_for_sync() {
-            Ok(p) => p,
-            Err(_) => return,
-        };
-        let page_metas: Vec<PageSyncMeta> = pages
-            .iter()
-            .map(|p| PageSyncMeta {
-                id: p.id.clone(),
-                title: p.title.clone(),
-                content: p.content.clone(),
-                parent_id: p.parent_id.clone(),
-                icon: p.icon.clone(),
-                cover_color: p.cover_color.clone(),
-                created_at: p.created_at.clone(),
-                updated_at: p.updated_at.clone(),
-                deleted_at: p.deleted_at.clone(),
-                pinned: p.pinned,
-                sort_order: p.sort_order,
-            })
-            .collect();
-        let handshake = SyncHandshake {
-            device_id,
-            device_name,
-            page_metas,
-        };
-        drop(db_guard);
-
+    if let Some(handshake) =
+        merge_inbound_handshake(&db, &running, &remote_handshake, device_id, device_name)
+    {
         let _ = write_encrypted_handshake(&mut stream, &handshake, &pairing_secret);
     }
+}
+
+fn merge_inbound_handshake(
+    db: &Arc<Mutex<Database>>,
+    running: &Arc<Mutex<bool>>,
+    remote_handshake: &SyncHandshake,
+    device_id: String,
+    device_name: String,
+) -> Option<SyncHandshake> {
+    // The database lock is the workspace swap/restore barrier. Checking the
+    // running flag only after acquiring it guarantees that a stopped worker
+    // cannot write to a replacement database. A worker that already passed
+    // this check keeps the old database locked until its merge is complete.
+    let db_guard = db.lock().ok()?;
+    if !*running.lock().unwrap_or_else(|e| e.into_inner()) {
+        return None;
+    }
+
+    for remote_meta in &remote_handshake.page_metas {
+        let _ = db_guard.upsert_page_from_sync(remote_meta);
+    }
+
+    let pages = db_guard.get_all_pages_for_sync().ok()?;
+    let page_metas = pages
+        .iter()
+        .map(|p| PageSyncMeta {
+            id: p.id.clone(),
+            title: p.title.clone(),
+            content: p.content.clone(),
+            parent_id: p.parent_id.clone(),
+            icon: p.icon.clone(),
+            cover_color: p.cover_color.clone(),
+            created_at: p.created_at.clone(),
+            updated_at: p.updated_at.clone(),
+            deleted_at: p.deleted_at.clone(),
+            pinned: p.pinned,
+            sort_order: p.sort_order,
+        })
+        .collect();
+
+    Some(SyncHandshake {
+        device_id,
+        device_name,
+        page_metas,
+    })
 }
 
 fn write_encrypted_handshake<W: Write>(
@@ -340,6 +367,7 @@ fn read_encrypted_handshake<R: Read>(
 mod tests {
     use super::*;
     use std::io::Cursor;
+    use std::sync::mpsc;
 
     fn test_handshake() -> SyncHandshake {
         SyncHandshake {
@@ -367,5 +395,70 @@ mod tests {
         let mut cursor = Cursor::new(frame);
         let result = read_encrypted_handshake(&mut cursor, "wrong secret");
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn dropping_service_signals_shutdown_without_double_join() {
+        let service = SyncService::new("device", "Device", 0, "shared secret");
+        let running = service.running.clone();
+        *running.lock().unwrap() = true;
+        drop(service);
+        assert!(!*running.lock().unwrap());
+    }
+
+    #[test]
+    fn stopped_inbound_worker_cannot_write_after_database_lock_delay() {
+        let root = std::env::temp_dir().join(format!(
+            "900notes-stopped-inbound-sync-{}",
+            uuid::Uuid::new_v4()
+        ));
+        let db = Arc::new(Mutex::new(Database::open(&root).unwrap()));
+        let running = Arc::new(Mutex::new(true));
+        let remote_handshake = SyncHandshake {
+            device_id: "remote-device".to_string(),
+            device_name: "Remote Device".to_string(),
+            page_metas: vec![PageSyncMeta {
+                id: "must-not-be-written".to_string(),
+                title: "Blocked page".to_string(),
+                content: r#"{"type":"doc","content":[]}"#.to_string(),
+                parent_id: None,
+                icon: None,
+                cover_color: None,
+                created_at: "2026-07-11T00:00:00Z".to_string(),
+                updated_at: "2026-07-11T00:00:00Z".to_string(),
+                deleted_at: None,
+                pinned: false,
+                sort_order: 0,
+            }],
+        };
+
+        let db_guard = db.lock().unwrap();
+        let worker_db = db.clone();
+        let worker_running = running.clone();
+        let (started_tx, started_rx) = mpsc::channel();
+        let worker = thread::spawn(move || {
+            started_tx.send(()).unwrap();
+            merge_inbound_handshake(
+                &worker_db,
+                &worker_running,
+                &remote_handshake,
+                "local-device".to_string(),
+                "Local Device".to_string(),
+            )
+        });
+
+        started_rx.recv().unwrap();
+        *running.lock().unwrap() = false;
+        drop(db_guard);
+
+        assert!(worker.join().unwrap().is_none());
+        assert!(db
+            .lock()
+            .unwrap()
+            .get_all_pages_for_sync()
+            .unwrap()
+            .is_empty());
+        drop(db);
+        std::fs::remove_file(root).unwrap();
     }
 }

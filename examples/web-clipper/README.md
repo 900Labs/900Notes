@@ -56,10 +56,10 @@ Browser Page → content.js (extract content)
 | File | Description |
 |------|-------------|
 | `manifest.json` | Extension manifest (MV3) |
-| `background.js` | Service worker — handles commands, context menu, and HTTP requests |
-| `content.js` | Content script — extracts page content or selection text |
+| `background.js` | Service worker: handles commands, context menu, and HTTP requests |
+| `content.js` | Content script: extracts page content or selection text |
 | `popup.html` | Popup UI for settings and manual clipping |
-| `popup.js` | Popup logic — save port settings, trigger clip |
+| `popup.js` | Popup logic: save port settings, trigger clip |
 
 ## Notes
 

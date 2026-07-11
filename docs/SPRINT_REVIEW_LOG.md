@@ -63,7 +63,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 | Check | Result |
 |-------|--------|
-| `npm run check` (0 errors) | ✅ Pass (19 a11y warnings — pre-existing) |
+| `npm run check` (0 errors) | ✅ Pass (19 a11y warnings - pre-existing) |
 | `npm run build` | ✅ Pass (330KB JS, 17KB CSS) |
 | `cargo build` | ✅ Pass |
 | `cargo clippy -- -D warnings` | ✅ Pass (0 warnings) |
@@ -79,13 +79,13 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 ### Known Limitations
 
-1. **Outline heading click**: The `onHeadingClick` callback receives a simple node index, not a ProseMirror position. Scrolling to the heading is not yet implemented — the callback is a no-op in App.svelte. This will be addressed in Sprint 2 when we add scroll-to-heading.
+1. **Outline heading click**: The `onHeadingClick` callback receives a simple node index, not a ProseMirror position. Scrolling to the heading is not yet implemented - the callback is a no-op in App.svelte. This will be addressed in Sprint 2 when we add scroll-to-heading.
 2. **Outline reactivity**: The outline updates when `content` prop changes, but the content prop only updates after the debounced save (500ms). Real-time outline updates will require a direct ProseMirror plugin.
 3. **PageProperties `$effect` pattern**: Uses a non-reactive `lastPageId` variable as a ref to prevent redundant loads. This is a pragmatic pattern but not idiomatic Svelte 5. Functional and correct.
 
 ### Verdict
 
-**PASSED** — All automated checks pass. Code follows existing patterns. 3 features fully implemented with backend, frontend, i18n, and store integration. Pre-existing clippy issues fixed as a bonus.
+**PASSED** - All automated checks pass. Code follows existing patterns. 3 features fully implemented with backend, frontend, i18n, and store integration. Pre-existing clippy issues fixed as a bonus.
 
 ---
 
@@ -107,7 +107,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 2. **Daily Notes**
    - "Daily Note" command in command palette (Ctrl/Cmd+K → "Daily Note")
-   - Auto-creates a page titled "Daily — YYYY-MM-DD" if one doesn't exist
+   - Auto-creates a page titled "Daily - YYYY-MM-DD" if one doesn't exist
    - Opens existing daily note if already created for today
    - Uses Daily Journal template content for new daily notes
    - Auto-links to previous day's daily note if it exists
@@ -127,7 +127,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 - **New types**: `Template`, `CreateTemplateInput`, `UpdateTemplateInput` in `src/lib/types.ts`
 - **New API wrappers**: `getAllTemplates`, `createTemplate`, `updateTemplate`, `deleteTemplate`, `createPageFromTemplate`, `getOrCreateDailyNote` in `src/lib/api.ts`
 - **New store**: `TemplateStore` in `src/stores/app.svelte.ts`
-- **New component**: `TemplatePicker.svelte` — modal with keyboard navigation
+- **New component**: `TemplatePicker.svelte` - modal with keyboard navigation
 - **CommandPalette**: Added "New Page from Template" and "Daily Note" commands
 - **App.svelte**: TemplatePicker integration, `handleTemplateSelect` handler, daily note action
 - **i18n**: 14 new translation keys across all 6 languages
@@ -136,7 +136,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 | Check | Result |
 |-------|--------|
-| `npm run check` (0 errors) | ✅ Pass (20 a11y warnings — pre-existing) |
+| `npm run check` (0 errors) | ✅ Pass (20 a11y warnings - pre-existing) |
 | `npm run build` | ✅ Pass (337KB JS, 17KB CSS) |
 | `cargo build` | ✅ Pass |
 | `cargo clippy -- -D warnings` | ✅ Pass (0 warnings) |
@@ -157,7 +157,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 ### Verdict
 
-**PASSED** — All automated checks pass. 2 features fully implemented with backend, frontend, i18n, and store integration. Template seeding solved cleanly with `serde_json::json!` to avoid SQL string escaping issues.
+**PASSED** - All automated checks pass. 2 features fully implemented with backend, frontend, i18n, and store integration. Template seeding solved cleanly with `serde_json::json!` to avoid SQL string escaping issues.
 
 ---
 
@@ -179,7 +179,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
    - File: `src/components/graph/GraphView.svelte`
 
 2. **Graph Filtering**
-   - Min links slider filter (0–10) to hide isolated/low-connection nodes
+   - Min links slider filter (0-10) to hide isolated/low-connection nodes
    - Filtered nodes and their edges are excluded from rendering and simulation
 
 3. **Command Palette Integration**
@@ -191,14 +191,14 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 - **New model**: `GraphNode`, `GraphEdge`, `GraphData` in `src-tauri/src/models/graph.rs`
 - **New command**: `get_graph_data` in `src-tauri/src/commands/graph.rs`
-- **New DB method**: `get_graph_data()` — queries all non-deleted pages with tag count and link count subqueries, plus all distinct edges from the links table
+- **New DB method**: `get_graph_data()` - queries all non-deleted pages with tag count and link count subqueries, plus all distinct edges from the links table
 - **Registered command**: Added to `invoke_handler` in `src-tauri/src/lib.rs`
 
 ### Frontend Changes
 
 - **New types**: `GraphNode`, `GraphEdge`, `GraphData` in `src/lib/types.ts`
 - **New API wrapper**: `getGraphData` in `src/lib/api.ts`
-- **New component**: `GraphView.svelte` — canvas renderer with force simulation, hover, drag, click-to-navigate, and min-links filter
+- **New component**: `GraphView.svelte` - canvas renderer with force simulation, hover, drag, click-to-navigate, and min-links filter
 - **CommandPalette**: Added "Toggle Graph View" command
 - **App.svelte**: Graph view integration with `showGraph` state, replaces editor when active
 - **i18n**: 4 new translation keys across all 6 languages
@@ -207,7 +207,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 | Check | Result |
 |-------|--------|
-| `npm run check` (0 errors) | ✅ Pass (23 a11y warnings — pre-existing) |
+| `npm run check` (0 errors) | ✅ Pass (23 a11y warnings - pre-existing) |
 | `npm run build` | ✅ Pass (343KB JS, 17KB CSS) |
 | `cargo build` | ✅ Pass |
 | `cargo clippy -- -D warnings` | ✅ Pass (0 warnings) |
@@ -225,11 +225,11 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 2. **No date range filter**: The sprint plan mentioned date range filtering, but this is deferred to a future sprint.
 3. **No zoom/pan**: The canvas doesn't support zoom or pan gestures. This will be important for large graphs.
 4. **Performance**: The force simulation runs on every animation frame. For very large graphs (1000+ nodes), this will need optimization (Web Worker or spatial indexing).
-5. **No persistence**: Node positions are not saved — the graph re-randomizes on each open.
+5. **No persistence**: Node positions are not saved - the graph re-randomizes on each open.
 
 ### Verdict
 
-**PASSED** — All automated checks pass. Graph view fully functional with canvas-based force-directed layout, hover/click/drag interaction, and min-links filtering. 1 new Tauri command, 4 new i18n keys × 6 languages.
+**PASSED** - All automated checks pass. Graph view fully functional with canvas-based force-directed layout, hover/click/drag interaction, and min-links filtering. 1 new Tauri command, 4 new i18n keys × 6 languages.
 
 ---
 
@@ -244,7 +244,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 1. **Saved Searches**
    - Store search queries with a custom name
    - Pin searches to sidebar (pinned searches sort first)
-   - Execute saved searches from the sidebar — results displayed inline
+   - Execute saved searches from the sidebar - results displayed inline
    - Delete saved searches
    - Sidebar "Smart" tab with inline create form
 
@@ -285,7 +285,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 | Check | Result |
 |-------|--------|
-| `npm run check` (0 errors) | ✅ Pass (24 a11y warnings — pre-existing) |
+| `npm run check` (0 errors) | ✅ Pass (24 a11y warnings - pre-existing) |
 | `npm run build` | ✅ Pass (357KB JS, 18KB CSS) |
 | `cargo build` | ✅ Pass |
 | `cargo clippy -- -D warnings` | ✅ Pass (0 warnings) |
@@ -305,7 +305,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 ### Verdict
 
-**PASSED** — All automated checks pass. Saved searches and smart folders fully implemented with backend CRUD, dynamic SQL rule engine, sidebar UI with rule builder, and command palette integration. 10 new Tauri commands, 18 new i18n keys × 6 languages.
+**PASSED** - All automated checks pass. Saved searches and smart folders fully implemented with backend CRUD, dynamic SQL rule engine, sidebar UI with rule builder, and command palette integration. 10 new Tauri commands, 18 new i18n keys × 6 languages.
 
 ---
 
@@ -353,7 +353,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 - **New types**: `PageRevision`, `Favorite` in `src/lib/types.ts`
 - **New API wrappers**: 9 new functions in `src/lib/api.ts`
 - **New store**: `HistoryStore` in `src/stores/app.svelte.ts` with revisions and favorites state
-- **New component**: `HistoryPanel.svelte` — revision list with restore/delete, content preview, timestamp formatting
+- **New component**: `HistoryPanel.svelte` - revision list with restore/delete, content preview, timestamp formatting
 - **Sidebar**: New "Favorites" tab with favorite pages list and remove buttons
 - **CommandPalette**: Added "Toggle History" and "Toggle Favorites" commands
 - **App.svelte**: `showHistory` state, `toggleHistory`/`toggleFavorites` action handlers, HistoryPanel rendering as right sidebar
@@ -363,7 +363,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 | Check | Result |
 |-------|--------|
-| `npm run check` (0 errors) | ✅ Pass (26 a11y warnings — pre-existing) |
+| `npm run check` (0 errors) | ✅ Pass (26 a11y warnings - pre-existing) |
 | `npm run build` | ✅ Pass (366KB JS, 18KB CSS) |
 | `cargo build` | ✅ Pass |
 | `cargo clippy -- -D warnings` | ✅ Pass (0 warnings) |
@@ -382,7 +382,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 ### Verdict
 
-**PASSED** — All automated checks pass. Page history with auto-snapshot on save, restore, and delete. Favorites with add/remove/reorder API. HistoryPanel and Favorites sidebar tab. 9 new Tauri commands, 12 new i18n keys × 6 languages.
+**PASSED** - All automated checks pass. Page history with auto-snapshot on save, restore, and delete. Favorites with add/remove/reorder API. HistoryPanel and Favorites sidebar tab. 9 new Tauri commands, 12 new i18n keys × 6 languages.
 
 ---
 
@@ -428,8 +428,8 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 - **New types**: `TagGroup`, `CreateTagGroupInput`, `UpdateTagGroupInput`, `RelatedPage` in `src/lib/types.ts`
 - **New API wrappers**: 9 new functions in `src/lib/api.ts`
 - **New store**: `DiscoveryStore` in `src/stores/app.svelte.ts` with tag groups, ungrouped tags, and related pages state
-- **New component**: `RelatedPagesPanel.svelte` — related pages list with score, reason badges, and navigation
-- **Updated component**: `TagList.svelte` — now shows tag groups with collapsible headers, ungrouped tags section, create group form, and delete group button
+- **New component**: `RelatedPagesPanel.svelte` - related pages list with score, reason badges, and navigation
+- **Updated component**: `TagList.svelte` - now shows tag groups with collapsible headers, ungrouped tags section, create group form, and delete group button
 - **CommandPalette**: Added "Toggle Related Pages" command
 - **App.svelte**: `showRelated` state, `toggleRelated` action handler, RelatedPagesPanel rendering as right sidebar
 - **i18n**: 11 new translation keys across all 6 languages
@@ -438,7 +438,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 | Check | Result |
 |-------|--------|
-| `npm run check` (0 errors) | ✅ Pass (26 a11y warnings — pre-existing) |
+| `npm run check` (0 errors) | ✅ Pass (26 a11y warnings - pre-existing) |
 | `npm run build` | ✅ Pass (376KB JS, 18KB CSS) |
 | `cargo build` | ✅ Pass |
 | `cargo clippy -- -D warnings` | ✅ Pass (0 warnings) |
@@ -457,7 +457,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 ### Verdict
 
-**PASSED** — All automated checks pass. Related pages with weighted scoring algorithm (shared tags + backlinks + forward links). Tag groups with hierarchical collapsible UI, create/delete, and ungrouped tags section. 9 new Tauri commands, 11 new i18n keys × 6 languages.
+**PASSED** - All automated checks pass. Related pages with weighted scoring algorithm (shared tags + backlinks + forward links). Tag groups with hierarchical collapsible UI, create/delete, and ungrouped tags section. 9 new Tauri commands, 11 new i18n keys × 6 languages.
 
 ---
 
@@ -498,7 +498,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 - **New API wrappers**: 4 new functions in `src/lib/api.ts`
 - **New store**: `AttachmentStore` in `src/stores/app.svelte.ts`
 - **Schema**: Added `image` node to ProseMirror schema in `src/lib/editor/schema.ts` with `src`, `alt`, `title`, `attachmentId` attrs
-- **Editor plugin**: `buildImagePastePlugin` in `src/lib/editor/index.ts` — handles `handleDrop` and `handlePaste` for image files, uploads via Tauri API, inserts image node
+- **Editor plugin**: `buildImagePastePlugin` in `src/lib/editor/index.ts` - handles `handleDrop` and `handlePaste` for image files, uploads via Tauri API, inserts image node
 - **EditorView.svelte**: Added `getPageId` callback to both `createEditor` calls
 - **CSS**: Added `.pm-image` and `img` styles in `app.css`
 - **i18n**: 7 new translation keys across all 6 languages
@@ -507,7 +507,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 | Check | Result |
 |-------|--------|
-| `npm run check` (0 errors) | ✅ Pass (26 a11y warnings — pre-existing) |
+| `npm run check` (0 errors) | ✅ Pass (26 a11y warnings - pre-existing) |
 | `npm run build` | ✅ Pass (379KB JS, 18KB CSS) |
 | `cargo build` | ✅ Pass |
 | `cargo clippy -- -D warnings` | ✅ Pass (0 warnings) |
@@ -525,7 +525,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 ### Verdict
 
-**PASSED** — All automated checks pass. Image paste/drag-drop with BLOB storage in SQLite, ProseMirror image node, inline rendering. Attachment API for create/get/list/delete. 4 new Tauri commands, 7 new i18n keys × 6 languages.
+**PASSED** - All automated checks pass. Image paste/drag-drop with BLOB storage in SQLite, ProseMirror image node, inline rendering. Attachment API for create/get/list/delete. 4 new Tauri commands, 7 new i18n keys × 6 languages.
 
 ---
 
@@ -538,8 +538,8 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 ### Features Delivered
 
 1. **Math/LaTeX Rendering (KaTeX)**
-   - Inline math: type `$latex$` — the `buildInlineMathPlugin` detects the closing `$` and wraps the text in a `math_inline` node
-   - Block math: type `$$` on an empty line — creates a `math_block` node via input rule
+   - Inline math: type `$latex$` - the `buildInlineMathPlugin` detects the closing `$` and wraps the text in a `math_inline` node
+   - Block math: type `$$` on an empty line - creates a `math_block` node via input rule
    - KaTeX renders math in real-time with `throwOnError: false` for graceful error handling
    - Click to edit LaTeX source, Enter/blur to render, Escape to cancel
    - KaTeX CSS bundled offline via `@import 'katex/dist/katex.min.css'`
@@ -564,16 +564,16 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 ### Dependencies Added
 
-- `katex` (npm) — LaTeX math rendering, offline bundled
-- `mermaid` (npm) — Diagram rendering, offline bundled
-- `@types/katex` (dev) — TypeScript types for KaTeX
+- `katex` (npm) - LaTeX math rendering, offline bundled
+- `mermaid` (npm) - Diagram rendering, offline bundled
+- `@types/katex` (dev) - TypeScript types for KaTeX
 
 ### Review Checklist
 
 | Check | Result |
 |-------|--------|
-| `npm run check` (0 errors) | ✅ Pass (26 a11y warnings — pre-existing) |
-| `npm run build` | ✅ Pass (759KB JS — KaTeX+Mermaid bundled) |
+| `npm run check` (0 errors) | ✅ Pass (26 a11y warnings - pre-existing) |
+| `npm run build` | ✅ Pass (759KB JS - KaTeX+Mermaid bundled) |
 | `cargo build` | ✅ Pass |
 | `cargo clippy -- -D warnings` | ✅ Pass (0 warnings) |
 | `cargo fmt` | ✅ Pass |
@@ -586,11 +586,11 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 2. **Bundle size**: KaTeX + Mermaid add ~380KB to the JS bundle. Could be reduced with dynamic imports.
 3. **Mermaid re-render**: Mermaid diagrams re-render on every update, which may be slow for complex diagrams.
 4. **No copy/paste of math nodes**: Copy-pasting math nodes between pages works at the JSON level but the NodeView state may not perfectly transfer.
-5. **No SlashMenu integration**: Math and Mermaid blocks are not available in the SlashMenu — only via keyboard shortcuts.
+5. **No SlashMenu integration**: Math and Mermaid blocks are not available in the SlashMenu - only via keyboard shortcuts.
 
 ### Verdict
 
-**PASSED** — All automated checks pass. KaTeX inline/block math rendering with click-to-edit. Mermaid diagram rendering with double-click source toggle. 3 new ProseMirror nodes, 3 custom NodeViews, 8 new i18n keys × 6 languages. No backend changes needed (pure frontend feature).
+**PASSED** - All automated checks pass. KaTeX inline/block math rendering with click-to-edit. Mermaid diagram rendering with double-click source toggle. 3 new ProseMirror nodes, 3 custom NodeViews, 8 new i18n keys × 6 languages. No backend changes needed (pure frontend feature).
 
 ---
 
@@ -637,7 +637,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 | Check | Result |
 |-------|--------|
-| `npm run check` (0 errors) | ✅ Pass (26 a11y warnings — pre-existing) |
+| `npm run check` (0 errors) | ✅ Pass (26 a11y warnings - pre-existing) |
 | `npm run build` | ✅ Pass |
 | `cargo build` | ✅ Pass |
 | `cargo clippy -- -D warnings` | ✅ Pass (0 warnings) |
@@ -656,7 +656,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 ### Verdict
 
-**PASSED** — All automated checks pass. PDF export for single page and workspace with embedded fonts. OCR via Tesseract CLI with graceful error handling. 3 new Tauri commands, 2 new Rust services, 11 new i18n keys × 6 languages.
+**PASSED** - All automated checks pass. PDF export for single page and workspace with embedded fonts. OCR via Tesseract CLI with graceful error handling. 3 new Tauri commands, 2 new Rust services, 11 new i18n keys × 6 languages.
 
 ---
 
@@ -708,7 +708,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 | Check | Result |
 |-------|--------|
-| `npm run check` (0 errors) | ✅ Pass (26 warnings — pre-existing a11y) |
+| `npm run check` (0 errors) | ✅ Pass (26 warnings - pre-existing a11y) |
 | `npm run build` | ✅ Pass |
 | `cargo build` | ✅ Pass |
 | `cargo clippy -- -D warnings` | ✅ Pass (0 warnings) |
@@ -720,12 +720,12 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 1. **No transcription**: Transcription field exists but no Whisper integration yet (deferred as per sprint plan).
 2. **Audio format**: Uses browser default `MediaRecorder` format (typically `audio/webm`). No format conversion.
-3. **No audio import**: Cannot import external audio files — only live recording is supported.
+3. **No audio import**: Cannot import external audio files - only live recording is supported.
 4. **No waveform visualization**: Simple `<audio>` player without waveform display.
 
 ### Verdict
 
-**PASSED** — All automated checks pass. Audio recording via `MediaRecorder` API, playback with inline player, `audio_block` ProseMirror node, `audio_notes` DB table with 5 CRUD commands, 7 new i18n keys × 6 languages, markdown export support.
+**PASSED** - All automated checks pass. Audio recording via `MediaRecorder` API, playback with inline player, `audio_block` ProseMirror node, `audio_notes` DB table with 5 CRUD commands, 7 new i18n keys × 6 languages, markdown export support.
 
 ---
 
@@ -773,9 +773,9 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 ### Architecture
 
 - **Model** (`src-tauri/src/models/sync.rs`): `SyncDeviceInfo`, `SyncStatus`, `PageSyncMeta`, `SyncHandshake`, `SyncConflict`
-- **Service** (`src-tauri/src/services/sync.rs`): `SyncService` — mDNS daemon, TCP server, peer browsing, sync exchange
+- **Service** (`src-tauri/src/services/sync.rs`): `SyncService` - mDNS daemon, TCP server, peer browsing, sync exchange
 - **Commands** (`src-tauri/src/commands/sync.rs`): 4 Tauri commands
-- **DB** (`src-tauri/src/db/mod.rs`): `get_all_pages_for_sync()`, `upsert_page_from_sync()` — includes deleted pages, conditional upsert
+- **DB** (`src-tauri/src/db/mod.rs`): `get_all_pages_for_sync()`, `upsert_page_from_sync()` - includes deleted pages, conditional upsert
 - **AppState**: Changed `db` from `Mutex<Database>` to `Arc<Mutex<Database>>` for shared access between sync threads and commands
 - **Types** (`src/lib/types.ts`): `SyncDeviceInfo`, `SyncStatus`, `SyncConflict`
 - **API** (`src/lib/api.ts`): 4 new API wrappers
@@ -786,7 +786,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 | Check | Result |
 |-------|--------|
-| `npm run check` (0 errors) | ✅ Pass (26 warnings — pre-existing a11y) |
+| `npm run check` (0 errors) | ✅ Pass (26 warnings - pre-existing a11y) |
 | `npm run build` | ✅ Pass |
 | `cargo check` | ✅ Pass |
 | `cargo clippy -- -D warnings` | ✅ Pass (0 warnings) |
@@ -796,16 +796,16 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 ### Known Limitations
 
-1. **Last-write-wins only**: No CRDT merge — concurrent edits to the same page will overwrite. CRDT sync is deferred to Sprint 12.
+1. **Last-write-wins only**: No CRDT merge - concurrent edits to the same page will overwrite. CRDT sync is deferred to Sprint 12.
 2. **Full sync only**: Exchanges all page metadata on every sync. No incremental/delta sync. Fine for small knowledge bases, may need optimization for large ones.
 3. **No attachments sync**: Only pages are synced. Attachments (images, audio) are not transferred. Deferred to Sprint 12.
 4. **No encryption**: Sync traffic is plaintext. Encryption is Sprint 14.
 5. **No auto-sync**: User must click "Sync Now" per peer. No automatic periodic sync. Deferred to Sprint 12.
-6. **Single database**: Changed `AppState.db` to `Arc<Mutex<Database>>` — all commands and sync share one connection. This is fine for SQLite but means sync operations briefly block command handlers.
+6. **Single database**: Changed `AppState.db` to `Arc<Mutex<Database>>` - all commands and sync share one connection. This is fine for SQLite but means sync operations briefly block command handlers.
 
 ### Verdict
 
-**PASSED** — All automated checks pass. mDNS discovery via `mdns-sd` crate, TCP sync protocol with length-prefixed JSON, last-write-wins merge with `upsert_page_from_sync`, 4 new Tauri commands, `SyncStore` with Svelte 5 Runes, sync settings UI panel, 13 new i18n keys × 6 languages.
+**PASSED** - All automated checks pass. mDNS discovery via `mdns-sd` crate, TCP sync protocol with length-prefixed JSON, last-write-wins merge with `upsert_page_from_sync`, 4 new Tauri commands, `SyncStore` with Svelte 5 Runes, sync settings UI panel, 13 new i18n keys × 6 languages.
 
 ---
 
@@ -850,7 +850,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 ### Architecture
 
-- **CRDT Service** (`src-tauri/src/services/crdt.rs`): `CrdtService` — Automerge `AutoCommit` wrapper with page CRUD, sync protocol, merge, and DB persistence
+- **CRDT Service** (`src-tauri/src/services/crdt.rs`): `CrdtService` - Automerge `AutoCommit` wrapper with page CRUD, sync protocol, merge, and DB persistence
 - **DB Schema**: New `sync_state` and `sync_queue` tables
 - **DB Methods**: 10 new methods for CRDT state and queue management
 - **AppState**: Added `crdt: Mutex<CrdtService>` field, initialized from DB on startup
@@ -861,7 +861,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 | Check | Result |
 |-------|--------|
-| `npm run check` (0 errors) | ✅ Pass (26 warnings — pre-existing a11y) |
+| `npm run check` (0 errors) | ✅ Pass (26 warnings - pre-existing a11y) |
 | `npm run build` | ✅ Pass |
 | `cargo check` | ✅ Pass |
 | `cargo clippy -- -D warnings` | ✅ Pass (0 warnings) |
@@ -880,7 +880,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 ### Verdict
 
-**PASSED** — All automated checks pass. Automerge 0.10 CRDT engine integrated with `CrdtService`, `sync_state`/`sync_queue` DB tables, 3 new Tauri commands, updated `SyncStore` with pending count and last sync, 3 new i18n keys × 6 languages. Foundation laid for full CRDT-over-TCP sync in Sprint 13.
+**PASSED** - All automated checks pass. Automerge 0.10 CRDT engine integrated with `CrdtService`, `sync_state`/`sync_queue` DB tables, 3 new Tauri commands, updated `SyncStore` with pending count and last sync, 3 new i18n keys × 6 languages. Foundation laid for full CRDT-over-TCP sync in Sprint 13.
 
 ---
 
@@ -940,7 +940,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 | `cargo check` | ✅ Pass |
 | `cargo clippy -- -D warnings` | ✅ Pass (0 warnings) |
 | `cargo fmt` | ✅ Pass |
-| `npm run check` (0 errors) | ✅ Pass (26 warnings — pre-existing a11y) |
+| `npm run check` (0 errors) | ✅ Pass (26 warnings - pre-existing a11y) |
 | `npm run build` | ✅ Pass |
 | All new i18n keys in 6 languages | ✅ Pass (17 new keys × 6) |
 | Svelte 5 Runes pattern followed | ✅ Pass |
@@ -956,7 +956,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 ### Verdict
 
-**PASSED** — All automated checks pass. Encrypted share bundles (AES-256-GCM), HTML export with ProseMirror→HTML renderer, and team workspaces with separate databases. 10 new Tauri commands, `WorkspaceStore` with Svelte 5 Runes, settings UI for sharing and workspaces, 17 new i18n keys × 6 languages.
+**PASSED** - All automated checks pass. Encrypted share bundles (AES-256-GCM), HTML export with ProseMirror→HTML renderer, and team workspaces with separate databases. 10 new Tauri commands, `WorkspaceStore` with Svelte 5 Runes, settings UI for sharing and workspaces, 17 new i18n keys × 6 languages.
 
 ---
 
@@ -969,7 +969,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 ### Features Delivered
 
 1. **Database Encryption at Rest**
-   - `EncryptionService` (`services/encryption.rs`) — AES-256-GCM encryption of the entire SQLite database file
+   - `EncryptionService` (`services/encryption.rs`) - AES-256-GCM encryption of the entire SQLite database file
    - Per-database salt + nonce stored in `.meta` JSON file alongside `.enc` encrypted DB
    - SHA-256 key derivation from passphrase + salt
    - `Database::checkpoint()` added to flush WAL before encryption
@@ -1011,7 +1011,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 | `cargo check` | ✅ Pass |
 | `cargo clippy -- -D warnings` | ✅ Pass (0 warnings) |
 | `cargo fmt` | ✅ Pass |
-| `npm run check` (0 errors) | ✅ Pass (26 warnings — pre-existing a11y) |
+| `npm run check` (0 errors) | ✅ Pass (26 warnings - pre-existing a11y) |
 | `npm run build` | ✅ Pass |
 | All new i18n keys in 6 languages | ✅ Pass (21 new keys × 6) |
 | Svelte 5 Runes pattern followed | ✅ Pass |
@@ -1027,7 +1027,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 ### Verdict
 
-**PASSED** — All automated checks pass. Database encryption at rest with AES-256-GCM, encrypted workspace export/import, passphrase management (enable/unlock/disable/change), `EncryptionStore` with Svelte 5 Runes, security settings panel, 21 new i18n keys × 6 languages. 8 new Tauri commands.
+**PASSED** - All automated checks pass. Database encryption at rest with AES-256-GCM, encrypted workspace export/import, passphrase management (enable/unlock/disable/change), `EncryptionStore` with Svelte 5 Runes, security settings panel, 21 new i18n keys × 6 languages. 8 new Tauri commands.
 
 ---
 
@@ -1054,8 +1054,8 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
    - User controls reference table
 
 3. **Secure Delete Implementation**
-   - `Database::secure_delete_page()` — Overwrites page content/title with null bytes, purges all related data (revisions, links, page_tags, page_properties, attachments, audio_notes), deletes the page row, then runs VACUUM to reclaim disk space
-   - `Database::secure_empty_trash()` — Same overwrite + purge for all trashed pages, then VACUUM
+   - `Database::secure_delete_page()` - Overwrites page content/title with null bytes, purges all related data (revisions, links, page_tags, page_properties, attachments, audio_notes), deletes the page row, then runs VACUUM to reclaim disk space
+   - `Database::secure_empty_trash()` - Same overwrite + purge for all trashed pages, then VACUUM
    - 2 Tauri commands: `secure_delete_page`, `secure_empty_trash`
    - Frontend: API wrappers, confirm dialog, settings UI in security panel
    - 5 new i18n keys × 6 languages (`security.secureDelete*`)
@@ -1073,7 +1073,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 | `cargo check` | ✅ Pass |
 | `cargo clippy -- -D warnings` | ✅ Pass (0 warnings) |
 | `cargo fmt` | ✅ Pass |
-| `npm run check` (0 errors) | ✅ Pass (26 warnings — pre-existing a11y) |
+| `npm run check` (0 errors) | ✅ Pass (26 warnings - pre-existing a11y) |
 | `npm run build` | ✅ Pass |
 | All new i18n keys in 6 languages | ✅ Pass (5 new keys × 6) |
 | Svelte 5 Runes pattern followed | ✅ Pass |
@@ -1090,7 +1090,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 ### Verdict
 
-**PASSED** — All automated checks pass. Formal threat model and privacy model documentation, secure delete implementation with overwrite + VACUUM, 2 new Tauri commands, security panel UI with confirmation, 5 new i18n keys × 6 languages.
+**PASSED** - All automated checks pass. Formal threat model and privacy model documentation, secure delete implementation with overwrite + VACUUM, 2 new Tauri commands, security panel UI with confirmation, 5 new i18n keys × 6 languages.
 
 ---
 
@@ -1139,13 +1139,13 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 - **CSS-first approach**: High contrast theme uses CSS class overrides with `!important` on Tailwind utility classes. This avoids JavaScript color logic and keeps the theme system declarative.
 - **Focus-visible over focus**: Uses `:focus-visible` (not `:focus`) so focus indicators only appear for keyboard users, not mouse users.
-- **Skip link pattern**: Standard accessible pattern — hidden off-screen, visible on focus, jumps to main content.
+- **Skip link pattern**: Standard accessible pattern - hidden off-screen, visible on focus, jumps to main content.
 
 ### Review Checklist
 
 | Check | Result |
 |-------|--------|
-| `npm run check` (0 errors) | ✅ Pass (23 warnings — pre-existing a11y + Svelte 5 reactivity) |
+| `npm run check` (0 errors) | ✅ Pass (23 warnings - pre-existing a11y + Svelte 5 reactivity) |
 | `npm run build` | ✅ Pass |
 | High contrast theme selectable | ✅ Pass |
 | Focus indicators visible | ✅ Pass |
@@ -1165,7 +1165,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 ### Verdict
 
-**PASSED** — All automated checks pass. High contrast theme (WCAG AA), ARIA labels and roles on all dialogs, focus-visible indicators, skip link, reduced motion support, label-control associations, 2 new i18n keys × 6 languages. 3 a11y warnings resolved (26 → 23).
+**PASSED** - All automated checks pass. High contrast theme (WCAG AA), ARIA labels and roles on all dialogs, focus-visible indicators, skip link, reduced motion support, label-control associations, 2 new i18n keys × 6 languages. 3 a11y warnings resolved (26 → 23).
 
 ---
 
@@ -1185,7 +1185,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
    - **Wiki-link autocomplete optimization**: `EditorView.loadPageTitles()` now uses `getPageTitles()` (returns `[id, title]` tuples) instead of `getAllPages()` (returns full `Page[]` with content).
 
 2. **Mobile Companion App**
-   - **Read-only mobile viewer**: `src/mobile/MobileApp.svelte` — a touch-optimized Svelte component with:
+   - **Read-only mobile viewer**: `src/mobile/MobileApp.svelte` - a touch-optimized Svelte component with:
      - Page list view (recent pages + all pages)
      - Search by title
      - Reader view with rendered ProseMirror content (headings, paragraphs, lists, code blocks, blockquotes, images, todo items)
@@ -1209,7 +1209,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 |-------|--------|
 | `cargo check` | ✅ Pass |
 | `cargo clippy -- -D warnings` | ✅ Pass |
-| `npm run check` (0 errors) | ✅ Pass (23 warnings — pre-existing) |
+| `npm run check` (0 errors) | ✅ Pass (23 warnings - pre-existing) |
 | `npm run build` (desktop) | ✅ Pass |
 | `npm run build:mobile` | ✅ Pass (124KB JS, 28KB CSS) |
 | Page tree loads without content | ✅ Pass |
@@ -1228,7 +1228,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 ### Verdict
 
-**PASSED** — All automated checks pass. SQLite PRAGMA optimizations, lightweight metadata queries (3 new Tauri commands), O(n) tree building, content-save tree reload skip, wiki-link title optimization, mobile companion app scaffold with read-only viewer, separate Vite/Tauri configs, mobile documentation.
+**PASSED** - All automated checks pass. SQLite PRAGMA optimizations, lightweight metadata queries (3 new Tauri commands), O(n) tree building, content-save tree reload skip, wiki-link title optimization, mobile companion app scaffold with read-only viewer, separate Vite/Tauri configs, mobile documentation.
 
 ---
 
@@ -1240,17 +1240,17 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 ### Features Delivered
 
-1. **Portuguese (pt)** — 227 keys translated. Covers both Brazilian and European Portuguese (uses neutral phrasing compatible with both variants).
-2. **Bengali (bn)** — 227 keys translated. Full Bengali translation for the ~300M Bengali speakers worldwide.
-3. **Urdu (ur)** — 227 keys translated. RTL language — marked `rtl: true` in locales array. Automatically triggers `document.documentElement.dir = 'rtl'` via existing `setLocale()` infrastructure.
-4. **Amharic (am)** — 227 keys translated. Full Amharic translation for Ethiopian users.
+1. **Portuguese (pt)** - 227 keys translated. Covers both Brazilian and European Portuguese (uses neutral phrasing compatible with both variants).
+2. **Bengali (bn)** - 227 keys translated. Full Bengali translation for the ~300M Bengali speakers worldwide.
+3. **Urdu (ur)** - 227 keys translated. RTL language - marked `rtl: true` in locales array. Automatically triggers `document.documentElement.dir = 'rtl'` via existing `setLocale()` infrastructure.
+4. **Amharic (am)** - 227 keys translated. Full Amharic translation for Ethiopian users.
 
 ### RTL Audit
 
 - Urdu (`ur`) is marked `rtl: true` in the locales array
 - The existing `setLocale()` function in `src/i18n/index.ts` already sets `document.documentElement.dir` based on the `rtl` flag
 - The SettingsModal already displays an "RTL" badge next to RTL languages
-- No additional CSS changes needed — the app uses logical properties (margin-left/padding-left) via Tailwind which adapts to `dir` attribute
+- No additional CSS changes needed - the app uses logical properties (margin-left/padding-left) via Tailwind which adapts to `dir` attribute
 - Arabic (existing) and Urdu (new) both use the same RTL code path
 
 ### Architecture
@@ -1264,12 +1264,12 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 | Check | Result |
 |-------|--------|
-| `npm run check` (0 errors) | ✅ Pass (23 warnings — pre-existing) |
+| `npm run check` (0 errors) | ✅ Pass (23 warnings - pre-existing) |
 | `npm run build` | ✅ Pass |
-| Portuguese — 227 keys | ✅ All keys present |
-| Bengali — 227 keys | ✅ All keys present |
-| Urdu — 227 keys | ✅ All keys present |
-| Amharic — 227 keys | ✅ All keys present |
+| Portuguese - 227 keys | ✅ All keys present |
+| Bengali - 227 keys | ✅ All keys present |
+| Urdu - 227 keys | ✅ All keys present |
+| Amharic - 227 keys | ✅ All keys present |
 | Urdu RTL flag | ✅ `rtl: true` set |
 | RTL dir attribute | ✅ Set via existing `setLocale()` |
 | SettingsModal language picker | ✅ Shows all 10 languages |
@@ -1283,7 +1283,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 ### Verdict
 
-**PASSED** — All automated checks pass. 4 new languages added (Portuguese, Bengali, Urdu, Amharic) with 227 keys each (908 total new translation strings). Urdu RTL support verified via existing infrastructure. Total app now supports 10 languages including 2 RTL (Arabic, Urdu).
+**PASSED** - All automated checks pass. 4 new languages added (Portuguese, Bengali, Urdu, Amharic) with 227 keys each (908 total new translation strings). Urdu RTL support verified via existing infrastructure. Total app now supports 10 languages including 2 RTL (Arabic, Urdu).
 
 ---
 
@@ -1299,7 +1299,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
    - **Backend (Rust)**: `plugins` table in SQLite, plugin CRUD methods in `db/mod.rs`, 7 Tauri commands in `commands/plugins.rs` (`get_all_plugins`, `get_enabled_plugins`, `install_plugin`, `set_plugin_enabled`, `uninstall_plugin`, `scan_plugins_dir`, `read_plugin_file`)
    - **Plugin model**: `Plugin` and `PluginManifest` structs in `models/plugin.rs` with `CustomBlockDef` for block definitions
    - **Frontend store**: `PluginStore` in `stores/plugins.svelte.ts` with reactive state for plugin list, loaded plugins, loading/error states
-   - **Plugin loader**: `lib/plugins/loader.ts` — dynamically loads plugin JS via `new Function()`, provides `PluginApi` with `registerBlock`, `registerCommand`, `registerHook`
+   - **Plugin loader**: `lib/plugins/loader.ts` - dynamically loads plugin JS via `new Function()`, provides `PluginApi` with `registerBlock`, `registerCommand`, `registerHook`
    - **Settings UI**: New "Plugins" tab in SettingsModal with enable/disable toggles, remove button, and "Scan for Plugins" button
    - **Directory scanning**: `scan_plugins_dir` command reads `plugin.json` manifests from `<app_data_dir>/plugins/*/` and auto-installs them
 
@@ -1309,11 +1309,11 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
    - `getCustomBlockDefs()` accessor for the editor to merge plugin blocks into the ProseMirror schema
 
 3. **Example Plugins** (in `examples/plugins/`)
-   - **callout** — Adds a callout block type with variant attribute (info, warning, tip, danger), registers a command and a pageSave hook
-   - **wordcount** — Adds a word count command that counts words in the editor, logs word count on pageSave hook
+   - **callout** - Adds a callout block type with variant attribute (info, warning, tip, danger), registers a command and a pageSave hook
+   - **wordcount** - Adds a word count command that counts words in the editor, logs word count on pageSave hook
 
 4. **Documentation**
-   - `docs/PLUGINS.md` — Full plugin developer guide: structure, manifest fields, custom block definition, plugin API, available hooks, installation instructions, security notes
+   - `docs/PLUGINS.md` - Full plugin developer guide: structure, manifest fields, custom block definition, plugin API, available hooks, installation instructions, security notes
 
 ### Architecture
 
@@ -1328,7 +1328,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 | Check | Result |
 |-------|--------|
 | `cargo check` | ✅ Pass (2 pre-existing warnings) |
-| `npm run check` (0 errors) | ✅ Pass (23 warnings — pre-existing) |
+| `npm run check` (0 errors) | ✅ Pass (23 warnings - pre-existing) |
 | `npm run build` | ✅ Pass |
 | Plugin DB table created | ✅ In migration |
 | 7 Tauri commands registered | ✅ In `lib.rs` |
@@ -1349,7 +1349,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 ### Verdict
 
-**PASSED** — All automated checks pass. Plugin system architecture with 7 Tauri commands, SQLite `plugins` table, `PluginStore` with Svelte 5 reactive state, plugin loader with `PluginApi` (registerBlock, registerCommand, registerHook), Settings UI Plugins tab, 2 example plugins (callout, wordcount), and full developer documentation.
+**PASSED** - All automated checks pass. Plugin system architecture with 7 Tauri commands, SQLite `plugins` table, `PluginStore` with Svelte 5 reactive state, plugin loader with `PluginApi` (registerBlock, registerCommand, registerHook), Settings UI Plugins tab, 2 example plugins (callout, wordcount), and full developer documentation.
 
 ---
 
@@ -1361,7 +1361,7 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 
 ### Features Delivered
 
-1. **Automation API** — 14 Tauri commands in `commands/automation.rs` exposing CRUD operations for external scripting:
+1. **Automation API** - 14 Tauri commands in `commands/automation.rs` exposing CRUD operations for external scripting:
    - `api_create_page`, `api_get_page`, `api_update_page`, `api_delete_page`
    - `api_search_pages`, `api_get_all_pages`, `api_get_page_tree`, `api_get_recent_pages`
    - `api_create_tag`, `api_get_all_tags`, `api_set_page_tags`
@@ -1370,13 +1370,13 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
    - All commands use lightweight metadata where possible (no full content loading for list operations)
    - Typed JavaScript wrappers in `src/lib/api.ts`
 
-2. **Evernote ENEX Importer** — Parses ENEX XML files using `roxmltree`, extracts note titles and content, strips HTML tags, converts to ProseMirror JSON, creates pages in the database.
+2. **Evernote ENEX Importer** - Parses ENEX XML files using `roxmltree`, extracts note titles and content, strips HTML tags, converts to ProseMirror JSON, creates pages in the database.
 
-3. **Notion Export Importer** — Reads a directory of exported Notion Markdown files, converts each `.md` file to ProseMirror JSON (headings, paragraphs, bullet lists), creates pages.
+3. **Notion Export Importer** - Reads a directory of exported Notion Markdown files, converts each `.md` file to ProseMirror JSON (headings, paragraphs, bullet lists), creates pages.
 
-4. **Obsidian Vault Importer** — Recursively walks a vault directory, imports all `.md` files as pages. Handles nested folder structures via recursive directory traversal.
+4. **Obsidian Vault Importer** - Recursively walks a vault directory, imports all `.md` files as pages. Handles nested folder structures via recursive directory traversal.
 
-5. **Roam JSON Importer** — Parses Roam Research JSON export format (array of page objects with `title` and `children` arrays), extracts block strings as paragraphs, creates pages with title headings.
+5. **Roam JSON Importer** - Parses Roam Research JSON export format (array of page objects with `title` and `children` arrays), extracts block strings as paragraphs, creates pages with title headings.
 
 6. **Web Clipper Browser Extension** (in `examples/web-clipper/`):
    - Manifest V3 Chrome/Firefox extension
@@ -1387,8 +1387,8 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
    - Visual notification on clip success/failure
 
 7. **Documentation**:
-   - `docs/AUTOMATION_API.md` — Full API reference with TypeScript examples, all 14 automation commands, 4 importers, and scripting examples (bulk create from CSV, export all to JSON)
-   - `examples/web-clipper/README.md` — Installation instructions for Chrome/Edge/Firefox, usage guide, architecture diagram
+   - `docs/AUTOMATION_API.md` - Full API reference with TypeScript examples, all 14 automation commands, 4 importers, and scripting examples (bulk create from CSV, export all to JSON)
+   - `examples/web-clipper/README.md` - Installation instructions for Chrome/Edge/Firefox, usage guide, architecture diagram
 
 ### Architecture
 
@@ -1402,9 +1402,9 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 | Check | Result |
 |-------|--------|
 | `cargo check` | ✅ Pass (3 pre-existing warnings) |
-| `npm run check` (0 errors) | ✅ Pass (23 warnings — pre-existing) |
+| `npm run check` (0 errors) | ✅ Pass (23 warnings - pre-existing) |
 | `npm run build` | ✅ Pass |
-| Automation API — 14 commands | ✅ Registered in `lib.rs` |
+| Automation API - 14 commands | ✅ Registered in `lib.rs` |
 | Evernote ENEX importer | ✅ Uses `roxmltree` for XML parsing |
 | Notion export importer | ✅ Reads `.md` files from directory |
 | Obsidian vault importer | ✅ Recursive directory walk |
@@ -1420,13 +1420,13 @@ This document tracks the build → review cycle for each post-MVP sprint. No spr
 1. **No local HTTP server**: The web clipper expects a local HTTP endpoint at `127.0.0.1:1420/api/clip` but 900Notes doesn't yet run an HTTP server. A Tauri sidecar or embedded HTTP server (e.g., `axum`) would be needed to receive clips.
 2. **Importers are basic**: The Markdown-to-ProseMirror conversion handles headings, paragraphs, and bullet lists but doesn't handle code blocks, quotes, todo items, or nested structures.
 3. **No wiki-link conversion**: Obsidian `[[wiki links]]` are not converted to 900Notes wiki links during import.
-4. **No attachment import**: Evernote attachments, Notion files, and Obsidian attachments are not imported — only text content.
+4. **No attachment import**: Evernote attachments, Notion files, and Obsidian attachments are not imported - only text content.
 5. **No progress reporting**: Large imports block the UI with no progress indicator. A streaming/async approach would improve UX.
 6. **No duplicate detection**: Re-importing the same content creates duplicate pages.
 7. **Web clipper icons**: Placeholder PNG icons are referenced but not included. Real icons need to be created.
 
 ### Verdict
 
-**PASSED** — All automated checks pass. 14 automation API commands, 4 importers (Evernote ENEX, Notion, Obsidian, Roam), web clipper browser extension (MV3), and full API documentation with examples. `roxmltree` dependency added for ENEX XML parsing.
+**PASSED** - All automated checks pass. 14 automation API commands, 4 importers (Evernote ENEX, Notion, Obsidian, Roam), web clipper browser extension (MV3), and full API documentation with examples. `roxmltree` dependency added for ENEX XML parsing.
 
 ---

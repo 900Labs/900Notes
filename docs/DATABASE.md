@@ -186,19 +186,19 @@ The link engine is implemented in `Database::rebuild_links_for_page()` and `Data
 
 1. When a page's `content` is updated (via `update_page`), the engine:
    - Deletes all existing `links` rows where `source_page_id = page_id`
-   - Scans the content JSON for `[[wiki link]]` syntax (the `extract_wiki_links` function)
+   - Parses canonical ProseMirror `wiki_link` nodes and legacy `[[wiki link]]` text
    - For each link text, finds a page with a matching title (case-insensitive)
    - Inserts a new `links` row connecting source → target
 
-2. `rebuild_all_links()` does the same for all pages — used after bulk imports.
+2. `rebuild_all_links()` does the same for all pages - used after bulk imports.
 
 ### Wiki Link Extraction
 
-The `extract_wiki_links()` function scans raw JSON content for `[[` and `]]` delimiters. It extracts the text between them as the link target. This works on the raw JSON string (not the parsed ProseMirror document) for simplicity and reliability.
+The `extract_wiki_links()` function parses the ProseMirror document and reads the `title` attribute from each canonical `wiki_link` node. It also scans text nodes for legacy `[[title]]` links so notes created by earlier releases remain connected. Duplicate titles are collapsed case-insensitively.
 
 ### Title Matching
 
-Link text is matched against page titles case-insensitively. If no match is found, the link is silently dropped (the `[[text]]` remains in the content but no link row is created). When a page is renamed, links are not automatically rebuilt — run `rebuild_links` to update.
+Link text is matched against page titles case-insensitively. If no match is found, the link is silently dropped (the `[[text]]` remains in the content but no link row is created). When a page is renamed, links are not automatically rebuilt - run `rebuild_links` to update.
 
 ## Page Hierarchy Validation
 

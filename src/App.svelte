@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte'
   import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+  import { getCurrentWindow } from '@tauri-apps/api/window'
   import Sidebar from './components/sidebar/Sidebar.svelte'
   import AppMenuBar from './components/AppMenuBar.svelte'
   import HomeDashboard from './components/HomeDashboard.svelte'
@@ -17,6 +18,7 @@
   import { pageStore, tagStore, backlinkStore, propertyStore, templateStore, settingsStore, historyStore, discoveryStore, encryptionStore, attachmentStore } from './stores/app.svelte'
   import { t, locale, setLocale } from './i18n'
   import * as api from './lib/api'
+  import { CloseCoordinator } from './lib/close-coordinator'
 
   let showCommandPalette = $state(false)
   let showTemplatePicker = $state(false)
@@ -37,6 +39,13 @@
 
   let savedCallback: ((e: KeyboardEvent) => void) | null = null
   let nativeMenuUnlisten: UnlistenFn | null = null
+  let closeUnlisten: UnlistenFn | null = null
+  const appWindow = getCurrentWindow()
+  const closeCoordinator = new CloseCoordinator(
+    () => pageStore.flushPendingEdits?.() ?? Promise.resolve(),
+    () => appWindow.destroy(),
+    (error) => console.error('Could not save before closing', error),
+  )
 
   async function loadAppData() {
     await settingsStore.loadSettings()
@@ -74,6 +83,14 @@
   }
 
   onMount(async () => {
+    try {
+      closeUnlisten = await appWindow.onCloseRequested((event) => {
+        event.preventDefault()
+        void closeCoordinator.requestClose()
+      })
+    } catch {
+      closeUnlisten = null
+    }
     try {
       nativeMenuUnlisten = await listen<string>('900notes-menu-action', (event) => {
         handleCommandAction(event.payload)
@@ -113,9 +130,11 @@
       window.removeEventListener('keydown', savedCallback)
     }
     nativeMenuUnlisten?.()
+    closeUnlisten?.()
   })
 
   async function handlePageSelect(pageId: string) {
+    await pageStore.flushPendingEdits?.()
     await pageStore.loadPage(pageId)
     await tagStore.loadPageTags(pageId)
     await backlinkStore.loadBacklinks(pageId)
@@ -125,6 +144,13 @@
 
   async function handlePageCreated(pageId: string) {
     await handlePageSelect(pageId)
+  }
+
+  async function handlePageRestored(pageId: string) {
+    await tagStore.loadPageTags(pageId)
+    await backlinkStore.loadBacklinks(pageId)
+    await propertyStore.loadProperties(pageId)
+    await attachmentStore.loadAttachments(pageId)
   }
 
   function openSettings(section: typeof settingsSection = 'appearance') {
@@ -183,6 +209,7 @@
   }
 
   async function handleQuickCapture(input: QuickCaptureInput) {
+    await pageStore.flushPendingEdits?.()
     if (input.sourceUrl) {
       const page = await api.apiCaptureWebPage({
         title: input.title,
@@ -222,6 +249,17 @@
   }
 
   async function handleCommandAction(action: string) {
+    const mutatingActions = new Set([
+      'newPage',
+      'openQuickCapture',
+      'openWebCapture',
+      'dailyNote',
+      'newFromTemplate',
+    ])
+    if (encryptionStore.enabled && !encryptionStore.unlocked && mutatingActions.has(action)) {
+      return
+    }
+
     switch (action) {
       case 'openCommandPalette':
         showCommandPalette = true
@@ -243,6 +281,7 @@
         showTemplatePicker = true
         break
       case 'dailyNote': {
+        await pageStore.flushPendingEdits?.()
         const today = new Date().toISOString().slice(0, 10)
         const page = await templateStore.getOrCreateDailyNote(today)
         await handlePageCreated(page.id)
@@ -309,7 +348,8 @@
       case 'toggleHistory':
         showHistory = !showHistory
         if (showHistory && pageStore.currentPage) {
-          historyStore.loadRevisions(pageStore.currentPage.id)
+          await pageStore.flushPendingEdits?.()
+          await historyStore.loadRevisions(pageStore.currentPage.id)
         }
         break
       case 'toggleRelated':
@@ -320,6 +360,7 @@
         break
       case 'exportMarkdown': {
         if (pageStore.currentPage) {
+          await pageStore.flushPendingEdits?.()
           const md = await api.exportPageMarkdown(pageStore.currentPage.id)
           const blob = new Blob([md], { type: 'text/markdown' })
           const url = URL.createObjectURL(blob)
@@ -333,6 +374,7 @@
       }
       case 'exportPagePdf': {
         if (pageStore.currentPage) {
+          await pageStore.flushPendingEdits?.()
           const bytes = await api.exportPagePdf(pageStore.currentPage.id)
           const blob = new Blob([new Uint8Array(bytes)], { type: 'application/pdf' })
           const url = URL.createObjectURL(blob)
@@ -345,6 +387,7 @@
         break
       }
       case 'exportWorkspacePdf': {
+        await pageStore.flushPendingEdits?.()
         const bytes = await api.exportWorkspacePdf()
         const blob = new Blob([new Uint8Array(bytes)], { type: 'application/pdf' })
         const url = URL.createObjectURL(blob)
@@ -359,6 +402,7 @@
   }
 
   async function handleTemplateSelect(template: import('./lib/types').Template) {
+    await pageStore.flushPendingEdits?.()
     const page = await templateStore.createPageFromTemplate(template.id, 'Untitled', null)
     await handlePageCreated(page.id)
     await pageStore.loadPageTree()
@@ -452,7 +496,7 @@
 
   {#if showHistory && pageStore.currentPage}
     <aside class="w-64 h-full bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden shrink-0">
-      <HistoryPanel onPageRestored={handlePageSelect} />
+      <HistoryPanel onPageRestored={handlePageRestored} />
     </aside>
   {/if}
 

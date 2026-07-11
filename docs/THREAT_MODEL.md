@@ -104,7 +104,7 @@ This document formalizes the security posture, identifies threats, and describes
 - On startup with encryption enabled, an in-memory placeholder DB is used until the user unlocks with their passphrase.
 - **Residual risk**: While the app is running with an unlocked encrypted database, the plain DB file exists on disk. Malware with file access can read it.
 
-**Severity**: HIGH (while unlocked) — accepted risk for local-first apps.
+**Severity**: HIGH (while unlocked) - accepted risk for local-first apps.
 
 ### 5.4 Tauri IPC Injection (T4)
 
@@ -141,7 +141,7 @@ This document formalizes the security posture, identifies threats, and describes
 - Key derivation uses iterative SHA-256 with 100,000 iterations and CSPRNG-generated salts (hardened from previous single-pass SHA-256).
 - **Residual risk**: Not a proper KDF (PBKDF2/Argon2). Still vulnerable to GPU brute-force with weak passphrases, but significantly harder than before.
 
-**Severity**: MEDIUM — will be improved with PBKDF2 in a future sprint.
+**Severity**: MEDIUM - will be improved with PBKDF2 in a future sprint.
 
 ### 5.7 Workspace Registry Tampering (T7)
 

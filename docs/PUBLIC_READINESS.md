@@ -1,7 +1,7 @@
 # Public Readiness
 
-**Status**: Public beta ready after the 2026-07-08 hardening patch is committed and the gate below passes.
-**Last readiness sprint**: 2026-07-08
+**Status**: Code-approved release candidate. Not ready for a public tag until repository-history privacy, cross-platform package jobs, and manual data-integrity checks are resolved.
+**Release target**: 1.6.0
 
 This document tracks the release hygiene checks that sit after the 20 planned feature sprints.
 
@@ -20,7 +20,7 @@ This document tracks the release hygiene checks that sit after the 20 planned fe
 - `package-lock.json` version metadata is synced with `package.json`.
 - CI now runs `npm audit` and `npm run build:mobile`; a manual Release Gate workflow packages the macOS app and uploads the DMG/checksum artifact.
 
-## Latest Verification
+## Previous Verification Snapshot
 
 Validated on 2026-07-08:
 
@@ -32,7 +32,20 @@ Validated on 2026-07-08:
 - `npm run tauri:build` produced a macOS app bundle and DMG.
 - `git diff --check` passed.
 
+## Current Release Candidate Snapshot
+
+Validated on 2026-07-11:
+
+- The Builder/Reviewer cycle closed all confirmed code findings, including save retry, close coordination, workspace isolation, exact restore, encryption cleanup, and inbound sync shutdown races.
+- 14 frontend tests and 43 Rust tests passed.
+- Svelte, TypeScript, Rust formatting, Clippy, desktop build, mobile build, npm audit, privacy checks, version checks, i18n checks, and Tauri capability checks passed.
+- RustSec reported no blocking advisory with the two documented ignores; 17 upstream desktop-stack warnings remain allowed.
+- The unsigned macOS app and DMG built successfully. DMG SHA-256: `3b85ae60efc8ed635adfe511d7c88536441a22e9b46628dad62e77704ba83f19`.
+- The independent Reviewer approved the code as a release candidate with no remaining code findings.
+
 ## Required Before Making Public
+
+Native window close must still be tested on each target platform. The automated capability check confirms that the close coordinator can call the Tauri window destroy API, but it cannot prove native close-request behavior on macOS, Windows, or Linux.
 
 ```bash
 ./scripts/verify-public-release.sh
@@ -46,4 +59,4 @@ Expected caveat: `cargo audit` may still report allowed warnings from the GTK/We
 
 ## Public Positioning
 
-This repository is suitable for a public beta, not an enterprise-ready release. The remaining hardening work is plugin sandboxing, stronger passphrase KDF metadata, automated frontend/E2E smoke coverage, artifact signing, checksums, and platform-specific install verification.
+The intended position is a public beta after the release checklist is complete. The repository must remain private or clearly marked as a candidate until then. Remaining work includes plugin sandboxing, stronger passphrase KDF metadata, signed artifacts, checksums, and platform-specific install verification.

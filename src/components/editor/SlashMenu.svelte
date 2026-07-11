@@ -23,7 +23,7 @@
     { action: 'todo', label: 'slash.todo', icon: '☐' },
     { action: 'codeBlock', label: 'slash.code', icon: '{ }' },
     { action: 'quote', label: 'slash.quote', icon: '"' },
-    { action: 'divider', label: 'slash.divider', icon: '—' },
+    { action: 'divider', label: 'slash.divider', icon: '-' },
     { action: 'audio', label: 'slash.audio', icon: '🎙' },
   ]
 

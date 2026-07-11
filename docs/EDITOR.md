@@ -38,27 +38,27 @@ The schema is defined in `src/lib/editor/schema.ts`.
 
 | Node | Group | Content | Attributes | Markdown Shortcut |
 |------|-------|---------|------------|-------------------|
-| `doc` | — | `block+` | — | — |
-| `paragraph` | block | `inline*` | — | (default) |
+| `doc` | - | `block+` | - | - |
+| `paragraph` | block | `inline*` | - | (default) |
 | `heading` | block | `inline*` | `level: 1\|2\|3` | `# `, `## `, `### ` |
-| `bullet_list` | block | `list_item+` | — | `- ` or `* ` |
-| `ordered_list` | block | `list_item+` | — | `1. ` |
-| `list_item` | — | `paragraph block*` | — | (inside list) |
+| `bullet_list` | block | `list_item+` | - | `- ` or `* ` |
+| `ordered_list` | block | `list_item+` | - | `1. ` |
+| `list_item` | - | `paragraph block*` | - | (inside list) |
 | `todo_item` | block | `inline*` | `checked: boolean` | `[] ` |
-| `code_block` | block | `text*` | — | ` ``` ` |
-| `blockquote` | block | `block+` | — | `> ` |
-| `divider` | block | — | — | `---` |
-| `image` | block | — | `src`, `alt`, `title`, `attachmentId` | Paste/drag image |
-| `table` | block | `table_row+` | — | (future) |
-| `table_row` | — | `table_cell+` | — | — |
-| `table_cell` | — | `block+` | — | — |
-| `text` | inline | — | — | — |
-| `wiki_link` | inline | — | `title: string`, `pageId: string\|null` | `[[title]]` |
-| `hard_break` | inline | — | — | `Shift+Enter` |
-| `math_inline` | inline | — | `latex: string` | `$...$` |
-| `math_block` | block | — | `latex: string` | `$$` |
+| `code_block` | block | `text*` | - | ` ``` ` |
+| `blockquote` | block | `block+` | - | `> ` |
+| `divider` | block | - | - | `---` |
+| `image` | block | - | `src`, `alt`, `title`, `attachmentId` | Paste/drag image |
+| `table` | block | `table_row+` | - | (future) |
+| `table_row` | - | `table_cell+` | - | - |
+| `table_cell` | - | `block+` | - | - |
+| `text` | inline | - | - | - |
+| `wiki_link` | inline | - | `title: string`, `pageId: string\|null` | `[[title]]` |
+| `hard_break` | inline | - | - | `Shift+Enter` |
+| `math_inline` | inline | - | `latex: string` | `$...$` |
+| `math_block` | block | - | `latex: string` | `$$` |
 | `mermaid_block` | block | `text*` | `rendered: boolean` | `~~~` |
-| `audio_block` | block | — (atom) | `attachmentId, audioNoteId, duration, title, transcription` | SlashMenu → Audio Note |
+| `audio_block` | block | - (atom) | `attachmentId, audioNoteId, duration, title, transcription` | SlashMenu → Audio Note |
 
 ### Audio Block
 
@@ -73,7 +73,7 @@ The `audio_block` node is an atom block node that renders an inline audio player
 | `underline` | Ctrl/Cmd+U | `<u>` |
 | `strike` | Ctrl/Cmd+Shift+X | `<s>` |
 | `code` | Ctrl/Cmd+`` ` `` | `<code>` |
-| `link` | — | `<a href>` |
+| `link` | - | `<a href>` |
 
 ## Input Rules
 

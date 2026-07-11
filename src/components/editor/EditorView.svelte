@@ -6,6 +6,7 @@
   import * as editorLib from '../../lib/editor'
   import * as api from '../../lib/api'
   import type { EditorView as PMEditorView } from 'prosemirror-view'
+  import { DebouncedPageSave } from '../../lib/debounced-save'
   import { TextSelection } from 'prosemirror-state'
   import EditorToolbar from './EditorToolbar.svelte'
   import SlashMenu from './SlashMenu.svelte'
@@ -29,11 +30,15 @@
   let pmView: PMEditorView | null = null
   let titleValue = $state('')
   let iconValue = $state('')
-  let saveTimer: ReturnType<typeof setTimeout> | null = null
+  const saver = new DebouncedPageSave(
+    ({ pageId, content }) => pageStore.updatePage(pageId, { content }).then(() => undefined),
+    (error) => showToast(`${$t('editor.saveFailed')}: ${String(error)}`, 'error'),
+  )
   let showSlashMenu = $state(false)
   let slashMenuPos = $state({ x: 0, y: 0 })
   let showWikiAutocomplete = $state(false)
   let wikiQuery = $state('')
+  let wikiTriggerFrom: number | null = null
   let exporting = $state(false)
   let ocrLoading = $state<string | null>(null)
   let toast = $state<{ msg: string; type: 'success' | 'error' } | null>(null)
@@ -52,11 +57,8 @@
     isFavorite = await historyStore.checkFavorite(page.id)
   }
 
-  function debounceSave(content: string) {
-    if (saveTimer) clearTimeout(saveTimer)
-    saveTimer = setTimeout(async () => {
-      await pageStore.updatePage(page.id, { content })
-    }, 500)
+  function debounceSave(pageId: string, content: string) {
+    saver.schedule({ pageId, content })
   }
 
   async function saveTitle() {
@@ -68,6 +70,17 @@
   async function saveIcon() {
     if (iconValue !== (page.icon || '')) {
       await pageStore.updatePage(page.id, { icon: iconValue || null })
+    }
+  }
+
+  async function flushEditor() {
+    try {
+      await saver.flush()
+      await saveTitle()
+      await saveIcon()
+    } catch (error) {
+      showToast(`${$t('editor.saveFailed')}: ${String(error)}`, 'error')
+      throw error
     }
   }
 
@@ -83,12 +96,24 @@
   function handleWikiLinkStart(e: Event) {
     const detail = (e as CustomEvent).detail
     wikiQuery = ''
+    wikiTriggerFrom = detail.from
     showWikiAutocomplete = true
+  }
+
+  function handleWikiLinkQuery(e: Event) {
+    const detail = (e as CustomEvent).detail
+    wikiQuery = detail.query
+    wikiTriggerFrom = detail.from
+  }
+
+  function handleWikiLinkClose() {
+    showWikiAutocomplete = false
+    wikiTriggerFrom = null
   }
 
   function handleWikiLinkSelect(title: string, pageId: string | null) {
     if (pmView) {
-      editorLib.insertWikiLink(pmView, title, pageId)
+      editorLib.insertWikiLink(pmView, title, pageId, wikiTriggerFrom)
     }
     showWikiAutocomplete = false
   }
@@ -102,6 +127,7 @@
     if (exporting) return
     exporting = true
     try {
+      await flushEditor()
       const bytes = await api.exportPagePdf(page.id)
       const blob = new Blob([new Uint8Array(bytes)], { type: 'application/pdf' })
       const url = URL.createObjectURL(blob)
@@ -185,41 +211,47 @@
   }
 
   onMount(async () => {
+    pageStore.flushPendingEdits = flushEditor
     await loadPageTitles()
     await loadFavoriteState()
 
     pmView = editorLib.createEditor(editorElement, page.content, {
-      onChange: (content) => debounceSave(content),
+      onChange: (content) => debounceSave(page.id, content),
       onWikiLinkClick: handleWikiLinkClick,
       getPageTitles: () => pageTitles,
       getPageId: () => page.id,
     })
 
     window.addEventListener('wiki-link-start', handleWikiLinkStart as EventListener)
+    window.addEventListener('wiki-link-query', handleWikiLinkQuery as EventListener)
+    window.addEventListener('wiki-link-close', handleWikiLinkClose)
   })
 
   onDestroy(() => {
     if (pmView) {
       editorLib.destroyEditor(pmView)
     }
-    if (saveTimer) {
-      clearTimeout(saveTimer)
-    }
+    pageStore.flushPendingEdits = null
     window.removeEventListener('wiki-link-start', handleWikiLinkStart as EventListener)
+    window.removeEventListener('wiki-link-query', handleWikiLinkQuery as EventListener)
+    window.removeEventListener('wiki-link-close', handleWikiLinkClose)
   })
 
   // Re-create editor when page changes
   let lastPageId = ''
+  let lastReloadToken = -1
   $effect(() => {
-    if (page.id !== lastPageId) {
+    const reloadToken = pageStore.editorReloadToken
+    if (page.id !== lastPageId || reloadToken !== lastReloadToken) {
       lastPageId = page.id
+      lastReloadToken = reloadToken
       titleValue = page.title
       iconValue = page.icon || ''
       if (pmView) {
         editorLib.destroyEditor(pmView)
       }
       pmView = editorLib.createEditor(editorElement, page.content, {
-        onChange: (content) => debounceSave(content),
+        onChange: (content) => debounceSave(page.id, content),
         onWikiLinkClick: handleWikiLinkClick,
         getPageTitles: () => pageTitles,
         getPageId: () => page.id,
@@ -288,35 +320,35 @@
       class="text-xs px-2.5 py-1 rounded-md {isFavorite ? 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'} transition-colors"
       title={isFavorite ? $t('favorites.remove') : $t('favorites.add')}
     >
-      {isFavorite ? 'Favorited' : 'Favorite'}
+      {isFavorite ? $t('favorites.remove') : $t('favorites.add')}
     </button>
     <button
       onclick={() => onAppAction('toggleOutline')}
       class="text-xs px-2.5 py-1 rounded-md {showOutline ? 'text-accent bg-accent/10' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'} transition-colors"
       title={$t('command.toggleOutline')}
     >
-      Outline
+      {$t('outline.title')}
     </button>
     <button
       onclick={() => onAppAction('toggleBacklinks')}
       class="text-xs px-2.5 py-1 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
       title={$t('command.toggleBacklinks')}
     >
-      Backlinks
+      {$t('editor.backlinks')}
     </button>
     <button
       onclick={() => onAppAction('toggleRelated')}
       class="text-xs px-2.5 py-1 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
       title={$t('command.toggleRelated')}
     >
-      Related
+      {$t('discovery.relatedPages')}
     </button>
     <button
       onclick={() => onAppAction('toggleHistory')}
       class="text-xs px-2.5 py-1 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
       title={$t('command.toggleHistory')}
     >
-      History
+      {$t('history.title')}
     </button>
     <button
       onclick={() => onAppAction('openLocalGraph')}
@@ -331,7 +363,7 @@
       class="text-xs px-2.5 py-1 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
       title={$t('command.exportMarkdown')}
     >
-      Markdown
+      {$t('command.exportMarkdown')}
     </button>
     <button
       onclick={handleExportPdf}

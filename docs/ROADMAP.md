@@ -1,6 +1,7 @@
 # Roadmap
 
 Status updated: 2026-07-08. Checked items are implemented in the current app/API; unchecked items remain future hardening, certification, or distribution work.
+Version 1.6.0 adds exact backups, page-bound autosave, active-workspace restoration, structured wiki links, and public repository documentation.
 
 ## MVP (Current)
 
@@ -78,3 +79,10 @@ Status updated: 2026-07-08. Checked items are implemented in the current app/API
 - [x] Import from other tools (Evernote, Notion, Obsidian, Roam)
 - [x] Web clipper (browser extension)
 - [ ] Published/signed browser extension and system share targets
+
+### Phase 8: Distribution
+- [x] Linux, macOS, and Windows CI smoke checks
+- [x] Versioned changelog and release checklist
+- [ ] Signed Windows packages
+- [ ] Signed and notarized macOS packages
+- [ ] Install verification on supported Linux package formats

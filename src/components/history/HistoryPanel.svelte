@@ -1,20 +1,24 @@
 <script lang="ts">
   import { historyStore, pageStore } from '../../stores/app.svelte'
   import { t } from '../../i18n'
+  import { restoreRevisionAfterFlush } from '../../lib/page-lifecycle'
 
   let {
     onPageRestored,
   }: {
-    onPageRestored: (id: string) => void
+    onPageRestored: (id: string) => Promise<void>
   } = $props()
 
   let selectedRevisionId = $state<string | null>(null)
 
   async function handleRestore(revisionId: string) {
     if (!confirm($t('history.restoreConfirm'))) return
-    const page = await historyStore.restoreRevision(revisionId)
-    pageStore.currentPage = page
-    onPageRestored(page.id)
+    await restoreRevisionAfterFlush(revisionId, {
+      flush: pageStore.flushPendingEdits,
+      restore: (id) => historyStore.restoreRevision(id),
+      showRestoredPage: (page) => pageStore.showReloadedPage(page),
+      refresh: onPageRestored,
+    })
   }
 
   async function handleDelete(revisionId: string) {

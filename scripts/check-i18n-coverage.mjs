@@ -60,4 +60,36 @@ if (failed) {
   process.exit(1)
 }
 
+const componentRoot = new URL('../src/components/', import.meta.url)
+const forbiddenCoreLiterals = [
+  'Favorited',
+  '>Favorite<',
+  '>Outline<',
+  '>Backlinks<',
+  '>Related<',
+  '>History<',
+  '>Markdown<',
+  '>All pages<',
+  'placeholder="Tag name',
+]
+
+function walk(directory) {
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = new URL(entry.name + (entry.isDirectory() ? '/' : ''), directory)
+    return entry.isDirectory() ? walk(path) : [path]
+  })
+}
+
+for (const file of walk(componentRoot).filter((path) => path.pathname.endsWith('.svelte'))) {
+  const component = fs.readFileSync(file, 'utf8').replace(/\s+/g, '')
+  for (const literal of forbiddenCoreLiterals) {
+    if (component.includes(literal.replace(/\s+/g, ''))) {
+      console.error(`${file.pathname}: core UI literal must use i18n: ${literal}`)
+      failed = true
+    }
+  }
+}
+
+if (failed) process.exit(1)
+
 console.log(`i18n coverage passed: ${localeCodes.length} locales, ${englishKeys.length} keys`)

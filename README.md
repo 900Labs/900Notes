@@ -1,228 +1,92 @@
 # 900Notes
 
-A note-taking app that actually works offline. Your notes stay on your computer. No subscriptions, no cloud, no account required.
+900Notes is a free, open source notes editor that works offline. It stores your notes on your computer, opens without an account, and does not require a subscription.
+
+## Why we built it
+
+Useful software should not become unavailable because someone cannot justify another monthly bill. Many students, researchers, independent workers, and small teams use older laptops or unreliable internet connections. Most popular notes apps are designed around permanent connectivity and recurring payments.
+
+900 Labs builds practical open source tools for people who get priced out of the software they need. 900Notes is part of that mission: a capable knowledge workspace that runs locally, works without the internet, and leaves the user in control of the data.
 
 Free. Forever.
 
-## Why This Exists
+## What it does
 
-Notion costs $10/month. Evernote keeps raising prices. Obsidian is great but sync costs money. If you're a student in Lagos, a researcher in Nairobi, or a small team in Accra, these tools are priced for San Francisco salaries, not for the rest of the world.
+- Rich text notes with headings, lists, tasks, code blocks, quotes, math, Mermaid diagrams, images, files, and audio
+- Nested pages, trash and restore, favorites, page history, templates, and daily notes
+- `[[page links]]`, backlinks, related pages, and knowledge graphs
+- Tags, tag groups, tag filters, full text search, saved searches, and smart folders
+- Exact JSON workspace backup and restore, Markdown and PDF export, and encrypted sharing bundles
+- Imports from Markdown, Notion exports, Obsidian vaults, Evernote ENEX, and Roam JSON
+- Translation dictionaries for ten languages, with right-to-left layout support for Arabic and Urdu
+- Optional per-workspace encryption and optional local network sync
+- No telemetry and no hosted 900Notes service
 
-900Notes is our answer. It runs on whatever laptop you already have. It doesn't need the internet. Your data lives in a single file on your machine, and you can move it or back it up whenever you want.
+## Install
 
-Built by [900 Labs](https://www.900labs.com). We make open source tools for people who get priced out of the software they need to do their work.
+Download the package for your operating system from the repository's Releases page. Release packages are planned for macOS, Windows, and Linux. Until signed packages are published, developers can run the app from source.
 
-## Features
+### Run from source
 
-### Note & Page Management
-- Create, edit, delete, and duplicate notes
-- Nested page hierarchy with drag-and-drop reordering
-- Page titles, emoji icons, and cover colors
-- Page pinning for quick access
-- Trash with soft-delete and restore
-- Auto-save with recovery drafts
+Requirements:
 
-### Rich-Text WYSIWYG Editor
-- Block-based editor (ProseMirror) with Notion-like experience
-- Block types: headings, paragraphs, lists, to-dos, code blocks, blockquotes, dividers, tables
-- Inline formatting: bold, italic, underline, strikethrough, inline code
-- Slash command menu (`/`) for block insertion
-- Markdown shortcuts (type `#`, `-`, `>`, `[]`, ` ``` ` etc.)
-- Keyboard shortcuts for common actions
-- Paste sanitization
-
-### Bidirectional Linking
-- `[[page name]]` syntax auto-converted to links
-- Autocomplete dropdown when typing `[[`
-- Backlinks panel showing all pages linking to the current page
-- Click links to navigate between pages
-- Case-insensitive title matching
-
-### Tags
-- Add/remove colored tags on any page
-- Tag autocomplete
-- Filter pages by tag in sidebar
-- Create, rename, and delete tags
-
-### Full-Text Search
-- Instant search powered by SQLite FTS5
-- Results with snippet previews and highlighted matches
-- Search by title and content
-- Keyboard shortcut (Ctrl/Cmd+K) to open search
-
-### Data Storage & Portability
-- All data in a single SQLite file at `{APP_DATA_DIR}/900notes.db`
-- UUID v4 IDs for offline-safe creation
-- Export entire workspace to JSON
-- Export individual pages to Markdown
-- Import from JSON (round-trip restore)
-- Import from Markdown files
-- Attachment storage is capped at 25 MB per file to protect low-memory devices
-- No telemetry, no network calls
-
-### Internationalization
-- 10 languages: English, French, Spanish, Swahili, Hindi, Arabic (RTL), Portuguese, Bengali, Urdu (RTL), Amharic
-- Locale-aware formatting
-- RTL layout support for Arabic and Urdu
-
-### Settings
-- Theme: light, dark, or system
-- Language selection
-- Editor preferences (font size, line spacing)
-- Data location display
-- Export/import controls
-
-### Security & Encryption
-- AES-256-GCM database encryption at rest
-- Iterative SHA-256 key derivation (100,000 rounds) with CSPRNG salts
-- Encryption unlock gate — app requires passphrase on startup when encrypted
-- Plaintext database re-encrypted and deleted on app shutdown
-- Encrypted share bundles and workspace export
-- Content Security Policy (CSP) hardening
-- Secure delete (overwrite before delete)
-
-### LAN Sync
-- Peer-to-peer sync over local network (mDNS + TCP)
-- Opt-in — only activates when explicitly started
-- Requires the same 12+ character pairing secret on each device
-- Sync handshakes are encrypted with AES-256-GCM using the pairing secret
-- Sync message size cap (100MB) to prevent DoS
-
-### Accessibility
-- Full ARIA roles and labels
-- Keyboard navigation support
-- Skip-to-content link
-- RTL layout for Arabic
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Desktop shell | Tauri v2 |
-| Backend | Rust |
-| Frontend | Svelte 5 (Runes) |
-| Database | SQLite (local, single file) |
-| Editor | ProseMirror (block-based WYSIWYG) |
-| Full-text search | SQLite FTS5 |
-| Styling | TailwindCSS |
-| License | Apache 2.0 |
-
-### Why Tauri v2?
-
-Tauri uses your system's built-in webview instead of shipping a full copy of Chromium. That means the app is smaller, uses less memory, and starts faster. If you're running this on a 4-year-old laptop with 4GB RAM, you'll feel the difference.
-
-## Installation
-
-### Releases
-Tagged releases are on the [releases page](https://github.com/900Labs/900Notes/releases/latest) when available. Until we publish pre-built binaries, you can build from source.
-
-### Build from Source
-Prerequisites:
-- Rust 1.88+ — install from [rustup.rs](https://rustup.rs)
-- Node.js 20.19+, 22.12+, or 24+ — install from [nodejs.org](https://nodejs.org)
-- Tauri CLI v2: `cargo install tauri-cli --version "^2"`
-- Tauri v2 system dependencies — see [v2.tauri.app/start/prerequisites](https://v2.tauri.app/start/prerequisites/)
+- Node.js 22 or newer
+- Rust 1.88 or newer
+- The [Tauri 2 prerequisites](https://v2.tauri.app/start/prerequisites/) for your operating system
 
 ```bash
-# Clone the repository
 git clone https://github.com/900Labs/900Notes.git
 cd 900Notes
-
-# Install frontend dependencies
-npm install
-
-# Run in development mode (hot-reload)
-cargo tauri dev
-
-# Build for production
-cargo tauri build
+npm ci
+npm run tauri:dev
 ```
 
-Production app bundles and installers are written under `src-tauri/target/release/bundle/`.
+Build a desktop package:
 
-## Project Structure
-
-```
-900Notes/
-├── src/                          # Svelte 5 frontend
-│   ├── components/               # UI components by feature
-│   │   ├── editor/               # ProseMirror editor, toolbar, slash menu
-│   │   ├── sidebar/              # Page tree, tags, recent, trash
-│   │   ├── search/               # Search palette
-│   │   ├── backlinks/            # Backlinks panel
-│   │   ├── settings/             # Settings modal
-│   │   └── common/               # Shared UI primitives
-│   ├── stores/                   # Svelte 5 Runes state stores
-│   ├── i18n/                     # Translation files (10 languages)
-│   ├── lib/                      # API wrapper, types, editor schema
-│   └── utils/                    # Date, search utilities
-├── src-tauri/                    # Rust backend
-│   └── src/
-│       ├── commands/             # Tauri IPC command handlers
-│       ├── models/               # Data structures (Page, Tag, Link)
-│       ├── db/                   # SQLite schema, migrations, queries, FTS5
-│       └── services/             # Export/import, markdown conversion
-├── docs/                         # Documentation
-│   └── adr/                      # Architecture Decision Records
-├── scripts/                      # Validation and release scripts
-├── .github/                      # CI/CD workflows and templates
-├── CONTRIBUTING.md
-├── SECURITY.md
-├── LICENSE
-└── README.md
+```bash
+npm run tauri:build
 ```
 
-## Data Storage
+## First steps
 
-Everything lives in one SQLite file on your computer. No cloud, no server, no middleman.
-- Location: `{APP_DATA_DIR}/900notes.db`
-- IDs: UUID v4 so you can create notes offline without conflicts
-- Full-text search built on SQLite FTS5
+1. Select **New Page** and start writing. Changes save automatically.
+2. Type `/` to insert a block or use Markdown-style shortcuts such as `# `, `- `, and `> `.
+3. Type `[[` and choose another page to create a link. Open Backlinks or Graph View to explore connections.
+4. Add tags below the editor. Select a tag in the sidebar to see matching pages.
+5. Open **Settings > Data** to make a workspace backup. Restoring a backup exactly replaces the active workspace after confirmation.
+6. Open **Settings > Security** if you want to encrypt the active workspace. Keep the passphrase safe because it cannot be recovered.
 
-Your data doesn't leave your machine unless you choose to export it.
+## Data and privacy
 
-## Documentation
+Each workspace uses a local SQLite database in the operating system's application data directory. Attachments are stored in the same database and are limited to 25 MB per file. A workspace backup includes notes, trash, tags, properties, attachments, audio metadata, custom templates, searches, smart folders, favorites, tag groups, revisions, and settings. It does not include passphrases, clipper tokens, sync state, or plugin code.
 
-- [Architecture Overview](docs/ARCHITECTURE.md) - system design, data flow, and offline model
-- [Threat Model](docs/THREAT_MODEL.md) - security boundaries, mitigations, and residual risks
-- [Privacy Model](docs/PRIVACY_MODEL.md) - data inventory and data-flow rules
-- [Plugin System](docs/PLUGINS.md) - local plugin format, security notes, and examples
-- [Mobile Companion](docs/MOBILE.md) - read-only mobile build architecture and CSP
-- [Roadmap](docs/ROADMAP.md) - MVP scope and post-MVP phases
-- [Quality Gate](docs/QUALITY_GATE.md) - required pre-merge validation baseline
-- [Public Readiness](docs/PUBLIC_READINESS.md) - public beta release hygiene checklist
-- [Maintainer Handoff](docs/MAINTAINER_HANDOFF.md) - post-audit remediation summary and review checklist
+900Notes does not send telemetry. Network access occurs only when the user starts a local sync session or uses an explicit capture or sharing feature. See [SECURITY.md](SECURITY.md), [docs/PRIVACY_MODEL.md](docs/PRIVACY_MODEL.md), and [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md) for the boundaries.
 
-## Contributing
+Encryption protects a workspace at rest after a clean shutdown. While the app is unlocked it uses a temporary plaintext database. If the app or computer stops unexpectedly, that recovery copy is retained so newer notes are not overwritten. It is removed after the next successful unlock and clean shutdown.
 
-We welcome contributions from anyone, especially developers in the places this tool is built for. If you're coding from Lagos, Nairobi, Accra, or Mumbai, your contributions make this better for everyone who uses it.
+## Backups
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, coding standards, and the PR process.
+The version 1.6 backup format uses exact replace semantics. Importing a valid backup replaces all user-created data in the active workspace inside one database transaction. Older partial-export files are rejected rather than imported ambiguously. Keep a second copy of important backups on storage you control.
 
-Quick contribution ideas:
-- Add a translation for your language to `src/i18n/`
-- Add a new block type to the ProseMirror schema
-- Improve search relevance and snippet formatting
-- Report bugs in your operating environment
+## Development
+
+```bash
+npm ci
+npm test
+npm run check
+npm run build
+cargo test --manifest-path src-tauri/Cargo.toml
+./scripts/verify-public-release.sh
+```
+
+The complete local gate is `./scripts/verify-local.sh`. Architecture and contributor details are in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Community
+
+Bug reports and focused feature proposals are welcome. Please read [SUPPORT.md](SUPPORT.md), [CONTRIBUTING.md](CONTRIBUTING.md), [GOVERNANCE.md](GOVERNANCE.md), and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) before opening an issue or pull request.
+
+Security problems should be reported privately using the process in [SECURITY.md](SECURITY.md), not in a public issue.
 
 ## License
 
-Apache License 2.0. See [LICENSE](LICENSE) for the full text.
-You can use, modify, and distribute this software, including for commercial purposes. You don't owe us anything.
-
-## Security
-
-To report a vulnerability, email security@900labs.com. See [SECURITY.md](SECURITY.md) for the full process.
-
-## Part of the 900 Labs Ecosystem
-
-900Notes is part of the 900 Labs open-source portfolio:
-
-- [900PDF](https://github.com/900-labs/900pdf)
-- [900CRM](https://github.com/900-labs/900crm)
-- [900Invoice](https://github.com/900Labs/900Invoice)
-- [900Word](https://github.com/900Labs/900Word)
-
-All of our tools run on the same Tauri v2 + Rust + Svelte 5 stack. Same conventions, same libraries, same promise: free forever, works offline, open source.
-
-Learn more at [900labs.com/open-source](https://www.900labs.com/open-source).
+Apache License 2.0. See [LICENSE](LICENSE).

@@ -6,10 +6,10 @@
 
 ---
 
-## Sprint 1 — Phase 1a: Navigation & Structure
+## Sprint 1 - Phase 1a: Navigation & Structure
 **Goal**: Improve page navigation and add structured metadata.
 
-- [x] Command palette (extend Ctrl/Cmd+K beyond search — create page, toggle theme, switch workspace, insert block)
+- [x] Command palette (extend Ctrl/Cmd+K beyond search - create page, toggle theme, switch workspace, insert block)
 - [x] Outline view (auto-generated table of contents from H1-H3 headings)
 - [x] Page properties/metadata (custom key-value pairs per page, displayed above content)
 
@@ -17,17 +17,17 @@
 
 ---
 
-## Sprint 2 — Phase 1b: Templates & Daily Notes
+## Sprint 2 - Phase 1b: Templates & Daily Notes
 **Goal**: Reduce friction for recurring note types.
 
-- [x] Note templates (meeting notes, daily journal, project page, blank — stored as special pages)
+- [x] Note templates (meeting notes, daily journal, project page, blank - stored as special pages)
 - [x] Daily notes (auto-create a page per day with date title, auto-link to previous/next day)
 
 **Deliverables**: Template picker on new page, daily note command, date-based page linking.
 
 ---
 
-## Sprint 3 — Phase 1c: Graph View
+## Sprint 3 - Phase 1c: Graph View
 **Goal**: Visualize the knowledge base structure.
 
 - [x] Interactive force-directed graph (nodes = pages, edges = links, colored by tags)
@@ -38,7 +38,7 @@
 
 ---
 
-## Sprint 4 — Phase 2a: Saved Searches & Smart Folders
+## Sprint 4 - Phase 2a: Saved Searches & Smart Folders
 **Goal**: Let users persist and organize their search workflows.
 
 - [x] Saved searches (store query + filters, pin to sidebar)
@@ -48,7 +48,7 @@
 
 ---
 
-## Sprint 5 — Phase 2b: History & Favorites
+## Sprint 5 - Phase 2b: History & Favorites
 **Goal**: Track changes and pin important pages.
 
 - [x] Page history/versioning (snapshot on each save, diff view, restore previous version)
@@ -58,7 +58,7 @@
 
 ---
 
-## Sprint 6 — Phase 2c: Discovery & Tag Organization
+## Sprint 6 - Phase 2c: Discovery & Tag Organization
 **Goal**: Help users find related content and organize tags.
 
 - [x] Related pages (suggest pages with shared tags, shared backlinks, or similar content)
@@ -68,7 +68,7 @@
 
 ---
 
-## Sprint 7 — Phase 3a: Images & Attachments
+## Sprint 7 - Phase 3a: Images & Attachments
 **Goal**: Support rich media in notes.
 
 - [x] Image embedding (paste/drag images, stored as BLOBs in SQLite, rendered inline)
@@ -78,7 +78,7 @@
 
 ---
 
-## Sprint 8 — Phase 3b: Math & Diagrams
+## Sprint 8 - Phase 3b: Math & Diagrams
 **Goal**: Support technical and academic content.
 
 - [x] Math/LaTeX rendering (inline `$...$` and block `$$...$$` via KaTeX, offline bundled)
@@ -88,7 +88,7 @@
 
 ---
 
-## Sprint 9 — Phase 3c: PDF Export & OCR
+## Sprint 9 - Phase 3c: PDF Export & OCR
 **Goal**: Export and ingest content from physical sources.
 
 - [x] PDF export (export single page or entire workspace to PDF, lightweight renderer)
@@ -98,7 +98,7 @@
 
 ---
 
-## Sprint 10 — Phase 3d: Audio Notes
+## Sprint 10 - Phase 3d: Audio Notes
 **Goal**: Capture spoken knowledge.
 
 - [x] Audio recording (record from microphone, store as BLOB in SQLite)
@@ -109,7 +109,7 @@
 
 ---
 
-## Sprint 11 — Phase 4a: Local Network Sync
+## Sprint 11 - Phase 4a: Local Network Sync
 **Goal**: Sync between devices without cloud.
 
 - [x] Local network discovery (mDNS, find other 900Notes instances on same network)
@@ -119,7 +119,7 @@
 
 ---
 
-## Sprint 12 — Phase 4b: CRDT Sync Engine
+## Sprint 12 - Phase 4b: CRDT Sync Engine
 **Goal**: Conflict-free multi-device sync.
 
 - [x] CRDT-based document model (automerge or similar for ProseMirror docs)
@@ -130,7 +130,7 @@
 
 ---
 
-## Sprint 13 — Phase 4c: Sharing & Team Workspaces
+## Sprint 13 - Phase 4c: Sharing & Team Workspaces
 **Goal**: Share knowledge and support teams.
 
 - [x] Workspace sharing (export subset of pages as a shareable encrypted bundle)
@@ -141,7 +141,7 @@
 
 ---
 
-## Sprint 14 — Phase 5a: Encryption
+## Sprint 14 - Phase 5a: Encryption
 **Goal**: Protect data at rest.
 
 - [x] Local database encryption at rest with user passphrase
@@ -151,7 +151,7 @@
 
 ---
 
-## Sprint 15 — Phase 5b: Security Documentation & Secure Delete
+## Sprint 15 - Phase 5b: Security Documentation & Secure Delete
 **Goal**: Formalize security posture and ensure deleted data is gone.
 
 - [x] Threat model documentation (formal threat model like 900Word)
@@ -162,7 +162,7 @@
 
 ---
 
-## Sprint 16 — Phase 6a: Accessibility
+## Sprint 16 - Phase 6a: Accessibility
 **Goal**: Make 900Notes usable by everyone.
 
 - [x] Screen reader support (ARIA labels, semantic HTML, live regions for dynamic content)
@@ -173,7 +173,7 @@
 
 ---
 
-## Sprint 17 — Phase 6b: Performance & Mobile
+## Sprint 17 - Phase 6b: Performance & Mobile
 **Goal**: Optimize for low-resource hardware and extend to mobile.
 
 - [x] Legacy hardware optimization (profile and optimize for 4GB RAM, older CPUs, slow disks)
@@ -183,7 +183,7 @@
 
 ---
 
-## Sprint 18 — Phase 6c: Language Expansion
+## Sprint 18 - Phase 6c: Language Expansion
 **Goal**: Reach more users in their native language.
 
 - [x] Portuguese (Brazilian + European)
@@ -196,7 +196,7 @@
 
 ---
 
-## Sprint 19 — Phase 7a: Plugin System
+## Sprint 19 - Phase 7a: Plugin System
 **Goal**: Let users extend 900Notes.
 
 - [x] Plugin system architecture (local plugins loaded from a directory, JS/WASM-based)
@@ -206,7 +206,7 @@
 
 ---
 
-## Sprint 20 — Phase 7b: Automation & Importers
+## Sprint 20 - Phase 7b: Automation & Importers
 **Goal**: Connect 900Notes to the rest of the user's workflow.
 
 - [x] Automation API (local IPC API for scripting against the knowledge base)
@@ -221,20 +221,20 @@
 
 | Phase | Sprints | Features |
 |-------|---------|----------|
-| 1 — Enhanced Productivity | 3 | 6 |
-| 2 — Organization & Discovery | 3 | 6 |
-| 3 — Content Richness | 4 | 7 |
-| 4 — Sync & Collaboration | 3 | 5 |
-| 5 — Security & Privacy | 2 | 5 |
-| 6 — Accessibility & Platform | 3 | 6 |
-| 7 — Extensibility | 2 | 5 |
+| 1 - Enhanced Productivity | 3 | 6 |
+| 2 - Organization & Discovery | 3 | 6 |
+| 3 - Content Richness | 4 | 7 |
+| 4 - Sync & Collaboration | 3 | 5 |
+| 5 - Security & Privacy | 2 | 5 |
+| 6 - Accessibility & Platform | 3 | 6 |
+| 7 - Extensibility | 2 | 5 |
 | **Total** | **20** | **40** |
 
 At 2 weeks per sprint, the full post-MVP roadmap is approximately **40 weeks** (10 months) of development effort.
 
 ---
 
-## Public Readiness Sprint — Release Hygiene
+## Public Readiness Sprint - Release Hygiene
 **Status**: Complete as of 2026-07-05.
 
 **Goal**: Make the repository safe and coherent to open publicly after the 20 feature sprints.

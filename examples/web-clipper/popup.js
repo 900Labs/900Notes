@@ -1,4 +1,4 @@
-// 900Notes Web Clipper — Popup Script
+// 900Notes Web Clipper: Popup Script
 
 const portInput = document.getElementById('port');
 const tokenInput = document.getElementById('token');

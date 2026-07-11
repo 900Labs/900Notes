@@ -26,7 +26,7 @@ See the full [Tauri v2 prerequisites guide](https://v2.tauri.app/start/prerequis
 ```bash
 git clone https://github.com/900Labs/900Notes.git
 cd 900Notes
-npm install
+npm ci
 cargo tauri dev
 ```
 
@@ -128,7 +128,7 @@ The app opens at `http://localhost:1420` in the Tauri webview. Hot-reload is act
 ### TypeScript / Svelte
 
 - Use TypeScript for all new files. No plain `.js` files.
-- Use Svelte 5 Runes (`$state`, `$derived`, `$effect`, `$props`) — not Svelte 4 stores.
+- Use Svelte 5 Runes (`$state`, `$derived`, `$effect`, `$props`) - not Svelte 4 stores.
 - Follow the existing pattern: stores in `src/stores/app.svelte.ts`, API calls in `src/lib/api.ts`.
 - Use TailwindCSS classes for styling. No inline styles unless dynamic values are needed.
 - All UI text must use translation keys from `src/i18n/index.ts`.
@@ -183,15 +183,15 @@ npm run check
 
 ### Manual Smoke Test
 1. Launch with `cargo tauri dev`.
-2. Create a new page — verify it appears in the sidebar.
-3. Type in the editor — verify auto-save works (check no errors in console).
-4. Type `[[` — verify wiki link autocomplete appears.
-5. Create a second page, link to the first — verify backlinks panel updates.
-6. Add a tag — verify it appears in the sidebar Tags tab.
-7. Press Ctrl/Cmd+K — verify search palette opens.
-8. Open Settings — verify theme toggle and language switch work.
-9. Export workspace — verify JSON file downloads.
-10. Delete a page — verify it appears in Trash. Restore it.
+2. Create a new page - verify it appears in the sidebar.
+3. Type in the editor - verify auto-save works (check no errors in console).
+4. Type `[[` - verify wiki link autocomplete appears.
+5. Create a second page, link to the first - verify backlinks panel updates.
+6. Add a tag - verify it appears in the sidebar Tags tab.
+7. Press Ctrl/Cmd+K - verify search palette opens.
+8. Open Settings - verify theme toggle and language switch work.
+9. Export a workspace backup. Confirm restore warns about exact replacement, then restore into a disposable workspace.
+10. Delete a page - verify it appears in Trash. Restore it.
 
 ## Debugging
 

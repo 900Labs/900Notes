@@ -2,15 +2,15 @@
 
 ## Reporting a Vulnerability
 
-To report a vulnerability, email **security@900labs.com**.
+Use GitHub's private vulnerability reporting for this repository. If that route is unavailable, email **security@900labs.com**.
 
 Please include:
 - A description of the vulnerability
 - Steps to reproduce
 - The operating system and version you tested on
-- The 900Notes version (found in Settings → About)
+- The 900Notes version found in Settings > About
 
-We will acknowledge receipt within 48 hours and provide a timeline for a fix.
+Reports are reviewed as maintainer availability permits. We will share status and disclosure timing when we can do so safely.
 
 ## Scope
 
