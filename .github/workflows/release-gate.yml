@@ -46,7 +46,7 @@ jobs:
         run: shasum -a 256 src-tauri/target/release/bundle/dmg/*.dmg | tee src-tauri/target/release/bundle/dmg/SHA256SUMS
 
       - name: Upload macOS artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: 900notes-macos-release-gate
           path: |
@@ -85,7 +85,7 @@ jobs:
       - run: npm run tauri:build
 
       - name: Upload unsigned packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: 900notes-${{ runner.os }}-unsigned
           path: src-tauri/target/release/bundle/**
