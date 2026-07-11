@@ -2,7 +2,7 @@
 
 Release target: 1.6.0
 
-Status: Code-approved release candidate. Local automated gates and the independent Builder/Reviewer cycle are green. A public tag still requires the repository-history privacy decision, cross-platform package jobs, and the manual data-integrity checks below.
+Status: Version 1.6.0 public beta released on 2026-07-11. Local and GitHub-hosted gates, the independent Builder/Reviewer cycle, sanitized public history, and unsigned package builds are green.
 
 This audit focuses on whether people can install, understand, and trust 900Notes as an open source notes editor. It gives priority to note integrity, workspace isolation, backup portability, accurate documentation, and repeatable project checks.
 
@@ -35,9 +35,9 @@ The release gate covers:
 
 Run `./scripts/verify-local.sh` and `./scripts/verify-public-release.sh` before creating a release tag.
 
-The 2026-07-11 release-candidate run passed 14 frontend tests, 43 Rust tests, Svelte and TypeScript checks, Rust formatting and Clippy, desktop and mobile builds, npm audit, RustSec audit with the documented upstream warnings, privacy checks, and macOS app and DMG packaging. The independent Reviewer reported no remaining code findings. The unsigned macOS DMG SHA-256 is `3b85ae60efc8ed635adfe511d7c88536441a22e9b46628dad62e77704ba83f19`.
+The 2026-07-11 release run passed 14 frontend tests, 43 Rust tests, Svelte and TypeScript checks, Rust formatting and Clippy, desktop and mobile builds, npm audit, RustSec audit with the documented upstream warnings, privacy checks, and Linux, macOS, and Windows package builds. The independent Reviewer reported no remaining code findings. The public release contains checksummed unsigned AppImage, DEB, RPM, DMG, MSI, and NSIS packages. The macOS DMG SHA-256 is `6ceb817291dd96e5ae87fc3bbe5fc750bd7cb066c832601618d5b49d44e3369c`.
 
-## Manual release checks
+## Ongoing manual checks
 
 1. Create and edit two pages quickly, switch between them, restart, and verify both contain the correct text.
 2. Create a workspace, switch to it, restart, and verify it remains active.

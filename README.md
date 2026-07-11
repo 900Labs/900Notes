@@ -24,7 +24,9 @@ Free. Forever.
 
 ## Install
 
-Download the package for your operating system from the repository's Releases page. Release packages are planned for macOS, Windows, and Linux. Until signed packages are published, developers can run the app from source.
+Download the public-beta package for your operating system from the [Releases page](https://github.com/900Labs/900Notes/releases). Version 1.6.0 provides macOS Apple Silicon, Windows x64, and Linux x64 packages.
+
+The packages are not signed or notarized yet. Your operating system may show an untrusted-publisher warning. Check the SHA-256 values in the release notes before using an override. You can also build the app from source.
 
 ### Run from source
 

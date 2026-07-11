@@ -1,6 +1,6 @@
 # Public Readiness
 
-**Status**: Code-approved release candidate. Not ready for a public tag until repository-history privacy, cross-platform package jobs, and manual data-integrity checks are resolved.
+**Status**: Version 1.6.0 public beta released on 2026-07-11.
 **Release target**: 1.6.0
 
 This document tracks the release hygiene checks that sit after the 20 planned feature sprints.
@@ -32,7 +32,7 @@ Validated on 2026-07-08:
 - `npm run tauri:build` produced a macOS app bundle and DMG.
 - `git diff --check` passed.
 
-## Current Release Candidate Snapshot
+## Version 1.6.0 Release Snapshot
 
 Validated on 2026-07-11:
 
@@ -40,10 +40,12 @@ Validated on 2026-07-11:
 - 14 frontend tests and 43 Rust tests passed.
 - Svelte, TypeScript, Rust formatting, Clippy, desktop build, mobile build, npm audit, privacy checks, version checks, i18n checks, and Tauri capability checks passed.
 - RustSec reported no blocking advisory with the two documented ignores; 17 upstream desktop-stack warnings remain allowed.
-- The unsigned macOS app and DMG built successfully. DMG SHA-256: `3b85ae60efc8ed635adfe511d7c88536441a22e9b46628dad62e77704ba83f19`.
-- The independent Reviewer approved the code as a release candidate with no remaining code findings.
+- GitHub-hosted Linux, macOS, and Windows quality gates passed on the merged release commit.
+- Unsigned AppImage, DEB, RPM, DMG, MSI, and NSIS packages built successfully and were published with SHA-256 digests.
+- The independent Reviewer approved the code and final packaging changes with no remaining findings.
+- Public Git history and tags use organization identities. The pre-public repository is kept in a separate private archive.
 
-## Required Before Making Public
+## Ongoing Release Checks
 
 Native window close must still be tested on each target platform. The automated capability check confirms that the close coordinator can call the Tauri window destroy API, but it cannot prove native close-request behavior on macOS, Windows, or Linux.
 
@@ -59,4 +61,4 @@ Expected caveat: `cargo audit` may still report allowed warnings from the GTK/We
 
 ## Public Positioning
 
-The intended position is a public beta after the release checklist is complete. The repository must remain private or clearly marked as a candidate until then. Remaining work includes plugin sandboxing, stronger passphrase KDF metadata, signed artifacts, checksums, and platform-specific install verification.
+Version 1.6.0 is a public beta. The source and checksummed packages are public, but packages remain unsigned. Remaining work includes plugin sandboxing, stronger passphrase KDF metadata, signed artifacts, and broader platform-specific install verification.
