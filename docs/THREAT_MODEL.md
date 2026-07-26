@@ -74,7 +74,9 @@ This document formalizes the security posture, identifies threats, and describes
 **Mitigation**: 
 - AES-256-GCM database encryption (Sprint 14). Passphrase not stored.
 - Without passphrase, encrypted `.enc` file is indistinguishable from random bytes.
-- **Residual risk**: WAL/SHM files are not encrypted while the database is in use. Plain DB exists while unlocked.
+- Keys are derived with the memory-hard Argon2id KDF (64 MiB / 3 passes), replacing the earlier iterative SHA-256 scheme. Encrypted snapshots store a `version` so legacy data written with the SHA-256 KDF can still be read and is transparently upgraded on the next `change_passphrase`.
+- The live plaintext recovery file left after a crash is authenticated with an HMAC sidecar bound to the passphrase and the encrypted snapshot. On unlock, a recovery file that fails this check (e.g. swapped into the app data dir by a local attacker) is discarded and re-derived from the authoritative snapshot instead of being trusted.
+- **Residual risk**: WAL/SHM files are not encrypted while the database is in use. Plain DB exists while unlocked. Mid-session crash recovery now rolls back to the last encrypted snapshot rather than trusting an unverifiable plaintext file.
 
 **Severity**: HIGH (without encryption) → MEDIUM (with encryption)
 
@@ -138,10 +140,10 @@ This document formalizes the security posture, identifies threats, and describes
 **Likelihood**: Medium (if weak passphrase).  
 **Mitigation**:
 - AES-256-GCM with per-bundle salt and nonce.
-- Key derivation uses iterative SHA-256 with 100,000 iterations and CSPRNG-generated salts (hardened from previous single-pass SHA-256).
-- **Residual risk**: Not a proper KDF (PBKDF2/Argon2). Still vulnerable to GPU brute-force with weak passphrases, but significantly harder than before.
+- Key derivation uses Argon2id (memory-hard). Bundles carry a `version` so bundles encrypted with the earlier iterative SHA-256 KDF can still be decrypted; re-exporting upgrades them.
+- Imported share bundles never overwrite local pages: any imported page whose id already exists locally is remapped to a fresh UUID (with parent links, tags, and properties rewritten), so a crafted bundle with known ids and a hostile timestamp cannot replace local content.
 
-**Severity**: MEDIUM - will be improved with PBKDF2 in a future sprint.
+**Severity**: LOW-MEDIUM
 
 ### 5.7 Workspace Registry Tampering (T7)
 
@@ -174,31 +176,39 @@ This document formalizes the security posture, identifies threats, and describes
 | Control | Status | Sprint |
 |---------|--------|--------|
 | Database encryption at rest (AES-256-GCM) | ✅ Implemented | 14 |
+| Argon2id key derivation (memory-hard) | ✅ Implemented | Audit |
+| Encrypted DB integrity tag (anti-swap on unlock) | ✅ Implemented | Audit |
+| Workspace passphrase minimum length (≥12) | ✅ Implemented | Audit |
 | Encrypted share bundles | ✅ Implemented | 13 |
+| Share import ID remapping (no local overwrite) | ✅ Implemented | Audit |
 | Encrypted workspace export | ✅ Implemented | 14 |
 | Passphrase management (enable/change/disable) | ✅ Implemented | 14 |
 | Secure delete (overwrite before delete) | ✅ Implemented | 15 |
 | ProseMirror schema validation | ✅ Implemented | 1-4 |
 | Tauri IPC command whitelisting | ✅ Implemented | 1 |
 | LAN sync (opt-in, mDNS) | ✅ Implemented | 12 |
+| Stable persisted device identity for sync | ✅ Implemented | Audit |
+| Sync conflict detection and reporting | ✅ Implemented | Audit |
 | Re-encrypt on shutdown (plaintext DB cleanup) | ✅ Implemented | Audit |
 | Encryption unlock gate (frontend) | ✅ Implemented | Audit |
 | Content Security Policy (CSP) | ✅ Implemented | Audit |
+| Desktop CSP without `unsafe-eval`/`unsafe-inline` scripts | ✅ Implemented | Audit |
 | Sync message size cap (100MB) | ✅ Implemented | Audit |
 | Encrypted sync transport using pairing secret | ✅ Implemented | Audit remediation |
 | Mobile CSP without `unsafe-eval` | ✅ Implemented | Audit remediation |
 | Plugin file path canonicalization | ✅ Implemented | Audit remediation |
+| Plugin runtime disabled (no `eval`) until sandbox ships | ✅ Implemented | Audit |
+| Link href scheme allowlist (editor + HTML export) | ✅ Implemented | Audit |
 | Attachment BLOB size cap (25MB) | ✅ Implemented | Audit remediation |
 | Page hierarchy cycle rejection | ✅ Implemented | Audit remediation |
 | Escaped search snippets | ✅ Implemented | Audit remediation |
 | DB transaction wrapping (atomicity) | ✅ Implemented | Audit |
 | Revision pruning (last 50 per page) | ✅ Implemented | Audit |
 | Cargo audit in CI | ✅ Implemented | Audit |
-| Iterative key derivation (100K rounds) | ✅ Implemented | Audit |
 | CSPRNG for salt/nonce (getrandom) | ✅ Implemented | Audit |
 | Web clipper per-install token | ✅ Implemented | Audit remediation |
 | Authenticated sync pairing protocol | ❌ Not implemented | Future |
-| PBKDF2/Argon2 key derivation | ❌ Not implemented | Future |
+| Sandboxed plugin runtime (Worker/iframe) | ❌ Not implemented | Future |
 | Auto-lock timeout | ❌ Not implemented | Future |
 | Recovery key mechanism | ❌ Not implemented | Future |
 
@@ -212,7 +222,7 @@ This document formalizes the security posture, identifies threats, and describes
 
 ## 8. Future Work
 
-- **PBKDF2/Argon2**: Replace SHA-256 key derivation with a proper KDF.
+- **Sandboxed plugin runtime**: Run third-party plugin code in a Web Worker or sandboxed iframe and wire `loadEnabledPlugins()` into app startup. Management UI is live; execution is intentionally disabled until the sandbox exists.
 - **Authenticated sync pairing**: Replace the shared text secret with QR-code pairing or a PAKE/Noise-based flow.
 - **Auto-lock**: Re-lock the database after a period of inactivity.
 - **Recovery key**: Generate a recovery key during encryption setup.

@@ -472,6 +472,19 @@ impl Database {
         Ok(page)
     }
 
+    /// Returns `true` if a page with the given id exists (including trashed
+    /// pages). Used to detect ID collisions when importing share bundles so a
+    /// remote page can never overwrite local data.
+    pub fn page_exists(&self, id: &str) -> Result<bool, DbError> {
+        let exists: Option<i64> = self
+            .conn
+            .query_row("SELECT 1 FROM pages WHERE id = ?1", params![id], |row| {
+                row.get(0)
+            })
+            .optional()?;
+        Ok(exists.is_some())
+    }
+
     pub fn get_all_pages(&self) -> Result<Vec<Page>, DbError> {
         let mut stmt = self.conn.prepare(
             "SELECT id, parent_id, title, content, icon, cover_color, created_at, updated_at, deleted_at, pinned, sort_order

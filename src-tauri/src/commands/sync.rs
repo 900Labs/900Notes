@@ -14,12 +14,34 @@ pub fn start_sync(
         return Err("Sync pairing secret must be at least 12 characters".to_string());
     }
 
-    let device_id = uuid::Uuid::new_v4().to_string();
-    let name = device_name.unwrap_or_else(|| {
+    // Reuse a stable device identity across restarts so peers can recognize
+    // this machine. Persist it (and the chosen name) in settings on first use.
+    let db = state.db.lock().map_err(|e| e.to_string())?;
+    let device_id = match db
+        .get_setting("sync.device_id")
+        .map_err(|e| e.to_string())?
+    {
+        Some(id) if !id.is_empty() => id,
+        _ => {
+            let id = uuid::Uuid::new_v4().to_string();
+            db.set_setting("sync.device_id", &id)
+                .map_err(|e| e.to_string())?;
+            id
+        }
+    };
+    let stored_name = db
+        .get_setting("sync.device_name")
+        .map_err(|e| e.to_string())?
+        .filter(|n| !n.is_empty());
+    let name = device_name.or(stored_name).unwrap_or_else(|| {
         std::env::var("HOSTNAME")
             .or_else(|_| std::env::var("COMPUTERNAME"))
             .unwrap_or_else(|_| "900Notes Device".to_string())
     });
+    db.set_setting("sync.device_name", &name)
+        .map_err(|e| e.to_string())?;
+    drop(db);
+
     let p = port.unwrap_or(9876);
 
     let mut sync_guard = state.sync.lock().map_err(|e| e.to_string())?;
@@ -58,21 +80,30 @@ pub fn get_sync_status(state: State<'_, AppState>) -> Result<SyncStatus, String>
     let sync_guard = state.sync.lock().map_err(|e| e.to_string())?;
     let db = state.db.lock().map_err(|e| e.to_string())?;
     let last_sync = db.get_last_sync_time().map_err(|e| e.to_string())?;
+    let persisted_device_id = db
+        .get_setting("sync.device_id")
+        .map_err(|e| e.to_string())?
+        .unwrap_or_default();
+    let persisted_device_name = db
+        .get_setting("sync.device_name")
+        .map_err(|e| e.to_string())?
+        .unwrap_or_default();
+    drop(db);
 
     if let Some(service) = sync_guard.as_ref() {
         Ok(SyncStatus {
             enabled: service.is_running(),
-            device_id: String::new(),
-            device_name: String::new(),
-            port: 0,
+            device_id: service.device_id().to_string(),
+            device_name: service.device_name().to_string(),
+            port: service.port(),
             peers: service.get_peers(),
             last_sync,
         })
     } else {
         Ok(SyncStatus {
             enabled: false,
-            device_id: String::new(),
-            device_name: String::new(),
+            device_id: persisted_device_id,
+            device_name: persisted_device_name,
             port: 0,
             peers: Vec::new(),
             last_sync,

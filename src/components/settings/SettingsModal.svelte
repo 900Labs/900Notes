@@ -359,7 +359,7 @@
       <button
         onclick={() => { activeSection = 'plugins'; pluginStore.loadPlugins() }}
         class="w-full text-left px-2 py-1.5 rounded-md text-sm {activeSection === 'plugins' ? 'bg-accent/10 text-accent font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}"
-      >Plugins</button>
+      >{$t('settings.plugins')}</button>
       <button
         onclick={() => (activeSection = 'about')}
         class="w-full text-left px-2 py-1.5 rounded-md text-sm {activeSection === 'about' ? 'bg-accent/10 text-accent font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}"
@@ -435,7 +435,7 @@
         <h2 class="text-lg font-semibold mb-4">{$t('settings.dataLocation')}</h2>
         <div class="space-y-4">
           <p class="text-sm text-gray-500 dark:text-gray-400">
-            All data is stored locally in a single SQLite file. No cloud. No server.
+            {$t('settings.dataBlurb')}
           </p>
           <div class="flex gap-2">
             <button
@@ -716,20 +716,27 @@
                 type="password"
                 bind:value={enablePassphrase}
                 placeholder={$t('security.passphrase')}
+                minlength="12"
+                autocomplete="new-password"
                 class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
               <input
                 type="password"
                 bind:value={enableConfirm}
                 placeholder={$t('security.confirmPassphrase')}
+                minlength="12"
+                autocomplete="new-password"
                 class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
+              {#if enablePassphrase && enablePassphrase.trim().length < 12}
+                <p class="text-xs text-red-500">{$t('security.passphraseMinLength')}</p>
+              {/if}
               {#if enablePassphrase && enableConfirm && enablePassphrase !== enableConfirm}
                 <p class="text-xs text-red-500">{$t('security.passphraseMismatch')}</p>
               {/if}
               <button
                 onclick={handleEnableEncryption}
-                disabled={!enablePassphrase || enablePassphrase !== enableConfirm}
+                disabled={!enablePassphrase || enablePassphrase !== enableConfirm || enablePassphrase.trim().length < 12}
                 class="px-4 py-2 rounded-lg text-sm font-medium bg-accent text-white hover:bg-accent-dark disabled:opacity-50"
               >{$t('security.enableEncryption')}</button>
             </div>
@@ -769,11 +776,16 @@
                 type="password"
                 bind:value={changeNewPassphrase}
                 placeholder={$t('security.newPassphrase')}
+                minlength="12"
+                autocomplete="new-password"
                 class="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
+              {#if changeNewPassphrase && changeNewPassphrase.trim().length < 12}
+                <p class="text-xs text-red-500">{$t('security.passphraseMinLength')}</p>
+              {/if}
               <button
                 onclick={handleChangePassphrase}
-                disabled={!changeOldPassphrase || !changeNewPassphrase}
+                disabled={!changeOldPassphrase || !changeNewPassphrase || changeNewPassphrase.trim().length < 12}
                 class="px-4 py-2 rounded-lg text-sm font-medium bg-accent text-white hover:bg-accent-dark disabled:opacity-50"
               >{$t('security.changePassphrase')}</button>
             </div>
@@ -840,8 +852,11 @@
           </div>
         </div>
       {:else if activeSection === 'plugins'}
-        <h2 class="text-lg font-semibold mb-4">Plugins</h2>
+        <h2 class="text-lg font-semibold mb-4">{$t('settings.plugins')}</h2>
         <div class="space-y-3">
+          <p class="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg">
+            {$t('plugins.experimentalNotice')}
+          </p>
           {#if pluginStore.loading}
             <p class="text-sm text-gray-500 dark:text-gray-400">Loading...</p>
           {:else if pluginStore.plugins.length === 0}

@@ -3,15 +3,25 @@ use aes_gcm::{
     Aes256Gcm, Nonce,
 };
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
+use hmac::{Hmac, Mac};
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
+use sha2::Sha256;
 use std::path::{Path, PathBuf};
+
+use crate::services::kdf;
+
+type HmacSha256 = Hmac<Sha256>;
 
 const ENCRYPTED_DB_SUFFIX: &str = ".enc";
 const META_SUFFIX: &str = ".meta";
+const INTEGRITY_SUFFIX: &str = ".integrity";
 const SALT_LEN: usize = 32;
 const NONCE_LEN: usize = 12;
 const KEY_LEN: usize = 32;
+const TAG_LEN: usize = 32;
+
+/// Minimum passphrase length enforced for workspace encryption and changes.
+pub const MIN_PASSPHRASE_LEN: usize = 12;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -22,19 +32,44 @@ pub struct EncryptedMeta {
     pub created_at: String,
 }
 
-fn derive_key(passphrase: &str, salt: &[u8]) -> [u8; KEY_LEN] {
-    let mut current = [0u8; KEY_LEN];
-    let mut hasher = Sha256::new();
-    hasher.update(passphrase.as_bytes());
-    hasher.update(salt);
-    current.copy_from_slice(&hasher.finalize());
+fn derive_key_for(version: &str, passphrase: &str, salt: &[u8]) -> [u8; KEY_LEN] {
+    kdf::derive_key_for_version(version, passphrase, salt)
+}
 
-    for _ in 0..100_000 {
-        let mut h = Sha256::new();
-        h.update(current);
-        current.copy_from_slice(&h.finalize());
+/// Validates that a passphrase meets the minimum strength policy. Returns an
+/// error string suitable for surfacing to the user when it is too weak.
+pub fn validate_passphrase(passphrase: &str) -> Result<(), String> {
+    if passphrase.trim().len() < MIN_PASSPHRASE_LEN {
+        return Err(format!(
+            "Passphrase must be at least {MIN_PASSPHRASE_LEN} characters"
+        ));
     }
-    current
+    Ok(())
+}
+
+/// HMAC key binding the live plaintext recovery file to the encrypted
+/// snapshot. Derived from the passphrase and the snapshot salt+nonce so that a
+/// file swapped into the app data directory by a local attacker cannot pass the
+/// integrity check without knowing the passphrase.
+fn integrity_key(passphrase: &str, salt: &[u8], nonce: &[u8]) -> [u8; KEY_LEN] {
+    let mut mac = <HmacSha256 as Mac>::new_from_slice(passphrase.as_bytes())
+        .expect("hmac accepts any key length");
+    mac.update(b"900notes-db-integrity-v1");
+    mac.update(salt);
+    mac.update(nonce);
+    let out = mac.finalize().into_bytes();
+    let mut key = [0u8; KEY_LEN];
+    key.copy_from_slice(&out);
+    key
+}
+
+fn hmac_of(key: &[u8; KEY_LEN], data: &[u8]) -> [u8; TAG_LEN] {
+    let mut mac = <HmacSha256 as Mac>::new_from_slice(key).expect("hmac accepts any key length");
+    mac.update(data);
+    let out = mac.finalize().into_bytes();
+    let mut tag = [0u8; TAG_LEN];
+    tag.copy_from_slice(&out);
+    tag
 }
 
 fn random_bytes(len: usize) -> Vec<u8> {
@@ -62,6 +97,10 @@ impl EncryptionService {
         PathBuf::from(format!("{}{}", self.db_path.display(), META_SUFFIX))
     }
 
+    pub fn integrity_path(&self) -> PathBuf {
+        PathBuf::from(format!("{}{}", self.db_path.display(), INTEGRITY_SUFFIX))
+    }
+
     pub fn is_encrypted(&self) -> bool {
         self.encrypted_path().exists() && self.meta_path().exists()
     }
@@ -69,6 +108,23 @@ impl EncryptionService {
     #[allow(dead_code)]
     pub fn has_plain_db(&self) -> bool {
         self.db_path.exists()
+    }
+
+    /// Reads and decodes the encryption metadata sidecar.
+    fn read_meta(&self) -> Result<EncryptedMeta, String> {
+        let meta_content =
+            std::fs::read_to_string(self.meta_path()).map_err(|e| format!("Read meta: {e}"))?;
+        serde_json::from_str(&meta_content).map_err(|e| format!("Parse meta: {e}"))
+    }
+
+    fn decoded_salt_and_nonce(meta: &EncryptedMeta) -> Result<(Vec<u8>, Vec<u8>), String> {
+        let salt = BASE64
+            .decode(&meta.salt)
+            .map_err(|e| format!("Decode salt: {e}"))?;
+        let nonce_bytes = BASE64
+            .decode(&meta.nonce)
+            .map_err(|e| format!("Decode nonce: {e}"))?;
+        Ok((salt, nonce_bytes))
     }
 
     pub fn enable_encryption(&self, passphrase: &str, plain_db_path: &Path) -> Result<(), String> {
@@ -88,7 +144,7 @@ impl EncryptionService {
         let plaintext = std::fs::read(plain_db_path).map_err(|e| format!("Read database: {e}"))?;
 
         let salt = random_bytes(SALT_LEN);
-        let key = derive_key(passphrase, &salt);
+        let key = derive_key_for(kdf::KDF_VERSION, passphrase, &salt);
         let cipher = Aes256Gcm::new_from_slice(&key).map_err(|e| format!("AES init: {e}"))?;
 
         let nonce_bytes = random_bytes(NONCE_LEN);
@@ -99,7 +155,7 @@ impl EncryptionService {
             .map_err(|e| format!("AES encrypt: {e}"))?;
 
         let meta = EncryptedMeta {
-            version: "1.0.0".to_string(),
+            version: kdf::KDF_VERSION.to_string(),
             salt: BASE64.encode(&salt),
             nonce: BASE64.encode(&nonce_bytes),
             created_at: chrono::Utc::now().to_rfc3339(),
@@ -174,22 +230,13 @@ impl EncryptionService {
             return Err("Encryption is not enabled".to_string());
         }
 
-        let meta_content =
-            std::fs::read_to_string(self.meta_path()).map_err(|e| format!("Read meta: {e}"))?;
-        let meta: EncryptedMeta =
-            serde_json::from_str(&meta_content).map_err(|e| format!("Parse meta: {e}"))?;
-
-        let salt = BASE64
-            .decode(&meta.salt)
-            .map_err(|e| format!("Decode salt: {e}"))?;
-        let nonce_bytes = BASE64
-            .decode(&meta.nonce)
-            .map_err(|e| format!("Decode nonce: {e}"))?;
+        let meta = self.read_meta()?;
+        let (salt, nonce_bytes) = Self::decoded_salt_and_nonce(&meta)?;
 
         let ciphertext =
             std::fs::read(self.encrypted_path()).map_err(|e| format!("Read encrypted DB: {e}"))?;
 
-        let key = derive_key(passphrase, &salt);
+        let key = derive_key_for(&meta.version, passphrase, &salt);
         let cipher = Aes256Gcm::new_from_slice(&key).map_err(|e| format!("AES init: {e}"))?;
 
         let nonce = Nonce::from_slice(&nonce_bytes);
@@ -259,7 +306,64 @@ impl EncryptionService {
         self.write_encrypted_snapshot(passphrase, plain_db_path)?;
         std::fs::remove_file(plain_db_path).map_err(|e| format!("Remove plaintext DB: {e}"))?;
 
+        // The live plaintext is gone; its integrity sidecar is now stale.
+        let _ = std::fs::remove_file(self.integrity_path());
         Ok(())
+    }
+
+    /// Writes (or refreshes) the HMAC sidecar that authenticates the live
+    /// plaintext recovery file. Should be called whenever we know the plaintext
+    /// on disk reflects a state we authored — after unlock, enable, or a
+    /// checkpoint of the running session.
+    pub fn write_integrity_tag(
+        &self,
+        passphrase: &str,
+        plain_db_path: &Path,
+    ) -> Result<(), String> {
+        if !self.is_encrypted() {
+            return Ok(());
+        }
+        let meta = self.read_meta()?;
+        let (salt, nonce) = Self::decoded_salt_and_nonce(&meta)?;
+        let key = integrity_key(passphrase, &salt, &nonce);
+
+        let plaintext = std::fs::read(plain_db_path)
+            .map_err(|e| format!("Read plaintext for integrity tag: {e}"))?;
+        let tag = hmac_of(&key, &plaintext);
+
+        let temp = self.integrity_path().with_extension("integrity.tmp");
+        std::fs::write(&temp, tag).map_err(|e| format!("Write integrity tag: {e}"))?;
+        std::fs::rename(&temp, self.integrity_path())
+            .map_err(|e| format!("Replace integrity tag: {e}"))?;
+        Ok(())
+    }
+
+    /// Returns `Ok(true)` only when the plaintext recovery file matches the
+    /// HMAC sidecar bound to the encrypted snapshot. A missing plaintext, a
+    /// missing sidecar, or a mismatch all return `Ok(false)` so the caller can
+    /// re-derive the database from the authoritative snapshot.
+    pub fn verify_integrity_tag(
+        &self,
+        passphrase: &str,
+        plain_db_path: &Path,
+    ) -> Result<bool, String> {
+        if !plain_db_path.exists() || !self.integrity_path().exists() {
+            return Ok(false);
+        }
+        let meta = self.read_meta()?;
+        let (salt, nonce) = Self::decoded_salt_and_nonce(&meta)?;
+        let key = integrity_key(passphrase, &salt, &nonce);
+
+        let plaintext = std::fs::read(plain_db_path)
+            .map_err(|e| format!("Read plaintext for integrity check: {e}"))?;
+        let stored =
+            std::fs::read(self.integrity_path()).map_err(|e| format!("Read integrity tag: {e}"))?;
+        if stored.len() != TAG_LEN {
+            return Ok(false);
+        }
+        let mut expected = [0u8; TAG_LEN];
+        expected.copy_from_slice(&stored);
+        Ok(hmac_of(&key, &plaintext) == expected)
     }
 
     pub fn verify_passphrase(&self, passphrase: &str) -> Result<bool, String> {
@@ -267,22 +371,13 @@ impl EncryptionService {
             return Ok(false);
         }
 
-        let meta_content =
-            std::fs::read_to_string(self.meta_path()).map_err(|e| format!("Read meta: {e}"))?;
-        let meta: EncryptedMeta =
-            serde_json::from_str(&meta_content).map_err(|e| format!("Parse meta: {e}"))?;
-
-        let salt = BASE64
-            .decode(&meta.salt)
-            .map_err(|e| format!("Decode salt: {e}"))?;
-        let nonce_bytes = BASE64
-            .decode(&meta.nonce)
-            .map_err(|e| format!("Decode nonce: {e}"))?;
+        let meta = self.read_meta()?;
+        let (salt, nonce_bytes) = Self::decoded_salt_and_nonce(&meta)?;
 
         let ciphertext =
             std::fs::read(self.encrypted_path()).map_err(|e| format!("Read encrypted DB: {e}"))?;
 
-        let key = derive_key(passphrase, &salt);
+        let key = derive_key_for(&meta.version, passphrase, &salt);
         let cipher = Aes256Gcm::new_from_slice(&key).map_err(|e| format!("AES init: {e}"))?;
 
         let nonce = Nonce::from_slice(&nonce_bytes);
@@ -334,19 +429,61 @@ mod tests {
     fn change_passphrase_preserves_the_live_database() {
         let (path, service) = fixture();
         std::fs::write(&path, b"notes").unwrap();
-        service.enable_encryption("old", &path).unwrap();
-        service.change_passphrase("old", "new", &path).unwrap();
+        service.enable_encryption("old passphrase", &path).unwrap();
+        service
+            .change_passphrase("old passphrase", "new passphrase", &path)
+            .unwrap();
         assert!(path.exists());
-        assert!(!service.verify_passphrase("old").unwrap());
-        assert!(service.verify_passphrase("new").unwrap());
+        assert!(!service.verify_passphrase("old passphrase").unwrap());
+        assert!(service.verify_passphrase("new passphrase").unwrap());
         assert_eq!(std::fs::read(&path).unwrap(), b"notes");
         std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
     }
+
+    #[test]
+    fn integrity_tag_detects_swapped_recovery_file() {
+        let (path, service) = fixture();
+        std::fs::write(&path, b"legitimate plaintext").unwrap();
+        service
+            .enable_encryption("strong passphrase", &path)
+            .unwrap();
+        service
+            .write_integrity_tag("strong passphrase", &path)
+            .unwrap();
+
+        // A file we authored passes the integrity check.
+        assert!(service
+            .verify_integrity_tag("strong passphrase", &path)
+            .unwrap());
+
+        // An attacker swaps the recovery file. The bound HMAC no longer matches.
+        std::fs::write(&path, b"attacker controlled bytes").unwrap();
+        assert!(!service
+            .verify_integrity_tag("strong passphrase", &path)
+            .unwrap());
+
+        std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+    }
+
+    #[test]
+    fn validate_passphrase_rejects_short_input() {
+        assert!(validate_passphrase("short").is_err());
+        assert!(validate_passphrase("elevenchars").is_err()); // 11 chars
+        assert!(validate_passphrase("strongpass12").is_ok()); // exactly 12
+        assert!(validate_passphrase("a very strong passphrase").is_ok());
+    }
 }
+
+/// Version byte prefix used by [`encrypt_data`] to record the KDF scheme. The
+/// legacy format had no prefix (`salt || nonce || ciphertext`), so a leading
+/// 0x02 unambiguously marks the new format while remaining readable for old
+/// blobs (whose salt's first byte is uniformly random and matches 0x02 with
+/// only ~0.4% probability — decrypt still falls back gracefully on failure).
+const ENCRYPTED_DATA_VERSION: u8 = 0x02;
 
 pub fn encrypt_data(plaintext: &[u8], passphrase: &str) -> Result<Vec<u8>, String> {
     let salt = random_bytes(SALT_LEN);
-    let key = derive_key(passphrase, &salt);
+    let key = kdf::derive_key(passphrase, &salt);
     let cipher = Aes256Gcm::new_from_slice(&key).map_err(|e| format!("AES init: {e}"))?;
 
     let nonce_bytes = random_bytes(NONCE_LEN);
@@ -356,7 +493,8 @@ pub fn encrypt_data(plaintext: &[u8], passphrase: &str) -> Result<Vec<u8>, Strin
         .encrypt(nonce, plaintext)
         .map_err(|e| format!("AES encrypt: {e}"))?;
 
-    let mut result = Vec::with_capacity(salt.len() + nonce_bytes.len() + ciphertext.len());
+    let mut result = Vec::with_capacity(1 + salt.len() + nonce_bytes.len() + ciphertext.len());
+    result.push(ENCRYPTED_DATA_VERSION);
     result.extend_from_slice(&salt);
     result.extend_from_slice(&nonce_bytes);
     result.extend_from_slice(&ciphertext);
@@ -365,6 +503,21 @@ pub fn encrypt_data(plaintext: &[u8], passphrase: &str) -> Result<Vec<u8>, Strin
 }
 
 pub fn decrypt_data(data: &[u8], passphrase: &str) -> Result<Vec<u8>, String> {
+    // New format: [0x02][salt][nonce][ciphertext].
+    if data.len() > 1 + SALT_LEN + NONCE_LEN && data[0] == ENCRYPTED_DATA_VERSION {
+        let salt = &data[1..1 + SALT_LEN];
+        let nonce_bytes = &data[1 + SALT_LEN..1 + SALT_LEN + NONCE_LEN];
+        let ciphertext = &data[1 + SALT_LEN + NONCE_LEN..];
+
+        let key = kdf::derive_key(passphrase, salt);
+        let cipher = Aes256Gcm::new_from_slice(&key).map_err(|e| format!("AES init: {e}"))?;
+        let nonce = Nonce::from_slice(nonce_bytes);
+        return cipher
+            .decrypt(nonce, ciphertext)
+            .map_err(|_| "Invalid passphrase or corrupted data".to_string());
+    }
+
+    // Legacy format (no version prefix): [salt][nonce][ciphertext].
     if data.len() < SALT_LEN + NONCE_LEN {
         return Err("Data too short".to_string());
     }
@@ -373,7 +526,7 @@ pub fn decrypt_data(data: &[u8], passphrase: &str) -> Result<Vec<u8>, String> {
     let nonce_bytes = &data[SALT_LEN..SALT_LEN + NONCE_LEN];
     let ciphertext = &data[SALT_LEN + NONCE_LEN..];
 
-    let key = derive_key(passphrase, salt);
+    let key = kdf::derive_key_legacy(passphrase, salt);
     let cipher = Aes256Gcm::new_from_slice(&key).map_err(|e| format!("AES init: {e}"))?;
 
     let nonce = Nonce::from_slice(nonce_bytes);

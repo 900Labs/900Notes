@@ -24,6 +24,42 @@ fn escape_html(s: &str) -> String {
         .replace('"', "&quot;")
 }
 
+/// Returns the URL unchanged only when its scheme is safe to emit in an
+/// exported `href`. `javascript:`, `data:`, `vbscript:`, and other dangerous
+/// schemes are rejected so an exported or in-editor link cannot carry a script
+/// payload when opened outside the app's strict CSP. Fragment links and
+/// scheme-less relative URLs are allowed.
+fn safe_href(url: &str) -> &str {
+    let trimmed = url.trim();
+    if trimmed.is_empty() {
+        return "";
+    }
+    if let Some(colon) = trimmed.find(':') {
+        if colon > 0 {
+            let scheme = trimmed[..colon].to_ascii_lowercase();
+            // A scheme starts with a letter and contains only letters, digits,
+            // '+', '-', '.' (RFC 3986). Anything else (e.g. "/path/a:b") is a
+            // relative URL, not a scheme.
+            let looks_like_scheme = scheme.chars().enumerate().all(|(i, c)| {
+                if i == 0 {
+                    c.is_ascii_lowercase()
+                } else {
+                    c.is_ascii_lowercase() || c.is_ascii_digit() || c == '+' || c == '-' || c == '.'
+                }
+            });
+            if looks_like_scheme
+                && !matches!(
+                    scheme.as_str(),
+                    "http" | "https" | "mailto" | "ftp" | "ftps" | "tel"
+                )
+            {
+                return "";
+            }
+        }
+    }
+    trimmed
+}
+
 fn render_node_html(node: &Value, output: &mut String) {
     let node_type = node.get("type").and_then(|t| t.as_str()).unwrap_or("");
     match node_type {
@@ -171,7 +207,10 @@ fn render_inline_html(node: &Value, output: &mut String) {
                                         .and_then(|a| a.get("href"))
                                         .and_then(|h| h.as_str())
                                         .unwrap_or("");
-                                    open_tags.push(format!("<a href=\"{}\">", escape_html(href)));
+                                    open_tags.push(format!(
+                                        "<a href=\"{}\" rel=\"noopener noreferrer\">",
+                                        escape_html(safe_href(href))
+                                    ));
                                 }
                                 _ => {}
                             }
@@ -323,4 +362,43 @@ pub fn export_pages_html(db: &Database, page_ids: &[String]) -> Result<String, c
     );
 
     Ok(full_html)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn safe_href_allows_http_https_mailto_and_fragments() {
+        assert_eq!(
+            safe_href("https://example.com/path"),
+            "https://example.com/path"
+        );
+        assert_eq!(safe_href("http://example.com"), "http://example.com");
+        assert_eq!(
+            safe_href("mailto:user@example.com"),
+            "mailto:user@example.com"
+        );
+        assert_eq!(safe_href("tel:+18005550100"), "tel:+18005550100");
+        assert_eq!(safe_href("#section"), "#section");
+        assert_eq!(safe_href("/relative/path"), "/relative/path");
+        assert_eq!(safe_href(""), "");
+    }
+
+    #[test]
+    fn safe_href_blocks_dangerous_schemes_regardless_of_case_or_whitespace() {
+        assert_eq!(safe_href("javascript:alert(1)"), "");
+        assert_eq!(safe_href("JaVaScRiPt:alert(1)"), "");
+        assert_eq!(safe_href("  javascript:alert(1)"), "");
+        assert_eq!(safe_href("data:text/html,<script>"), "");
+        assert_eq!(safe_href("vbscript:msgbox"), "");
+    }
+
+    #[test]
+    fn link_mark_strips_javascript_href_on_export() {
+        let doc = r#"{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"x","marks":[{"type":"link","attrs":{"href":"javascript:alert(1)"}}]}]}]}"#;
+        let html = prosemirror_to_html(doc);
+        assert!(!html.contains("javascript:"));
+        assert!(html.contains("href=\"\""));
+    }
 }

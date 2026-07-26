@@ -3,6 +3,7 @@ pub mod encryption;
 pub mod export_import;
 pub mod html_export;
 pub mod importers;
+pub mod kdf;
 pub mod markdown;
 pub mod ocr;
 pub mod pdf;

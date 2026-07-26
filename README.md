@@ -26,7 +26,16 @@ Free. Forever.
 
 Download the public-beta package for your operating system from the [Releases page](https://github.com/900Labs/900Notes/releases). Version 1.6.0 provides macOS Apple Silicon, Windows x64, and Linux x64 packages.
 
-The packages are not signed or notarized yet. Your operating system may show an untrusted-publisher warning. Check the SHA-256 values in the release notes before using an override. You can also build the app from source.
+The packages are not signed or notarized yet. Your operating system may show an untrusted-publisher warning. Verify the download against the SHA-256 checksum published in the release notes before trusting it:
+
+```bash
+# macOS / Linux
+shasum -a 256 900Notes-1.6.0-<platform>.<ext>
+# Windows (PowerShell)
+Get-FileHash 900Notes-1.6.0-<platform>.<ext> -Algorithm SHA256
+```
+
+Compare the output to the checksum in the release notes. If you cannot verify a checksum, or prefer not to bypass the publisher warning, build the app from source.
 
 ### Run from source
 
