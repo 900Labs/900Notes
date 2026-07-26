@@ -515,6 +515,7 @@ fn status_reason(status: u16) -> &'static str {
         403 => "403 Forbidden",
         404 => "404 Not Found",
         415 => "415 Unsupported Media Type",
+        423 => "423 Locked",
         _ => "500 Internal Server Error",
     }
 }

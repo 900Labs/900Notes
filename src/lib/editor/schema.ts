@@ -1,5 +1,27 @@
 import { Schema } from 'prosemirror-model'
 
+/**
+ * Returns an href only when its scheme is safe to render in an `<a>`.
+ * `javascript:`, `data:`, `vbscript:`, and other dangerous schemes are
+ * stripped so a note pasted from elsewhere (or a maliciously crafted doc)
+ * cannot carry a script payload in the editor or in exported HTML. Fragment
+ * links and scheme-less relative URLs are preserved.
+ */
+export function sanitizeHref(href: string): string {
+  const trimmed = (href ?? '').trim()
+  if (!trimmed) return ''
+  const colon = trimmed.indexOf(':')
+  if (colon > 0) {
+    const scheme = trimmed.slice(0, colon).toLowerCase()
+    // A scheme contains only ASCII letters, digits, +, -, . per RFC 3986.
+    const looksLikeScheme = /^[a-z][a-z0-9+.-]*$/.test(scheme)
+    if (looksLikeScheme && !['http', 'https', 'mailto', 'ftp', 'ftps', 'tel'].includes(scheme)) {
+      return ''
+    }
+  }
+  return trimmed
+}
+
 export const schema = new Schema({
   nodes: {
     doc: {
@@ -298,10 +320,10 @@ export const schema = new Schema({
       parseDOM: [
         {
           tag: 'a[href]',
-          getAttrs: (dom: HTMLElement) => ({ href: dom.getAttribute('href') || '' }),
+          getAttrs: (dom: HTMLElement) => ({ href: sanitizeHref(dom.getAttribute('href') || '') }),
         },
       ],
-      toDOM: (node) => ['a', { href: node.attrs.href, class: 'pm-link' }, 0],
+      toDOM: (node) => ['a', { href: sanitizeHref(node.attrs.href), class: 'pm-link', rel: 'noopener noreferrer', target: '_blank' }, 0],
     },
   },
 })

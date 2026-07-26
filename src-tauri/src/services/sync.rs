@@ -172,6 +172,18 @@ impl SyncService {
         self.peers.lock().unwrap_or_else(|e| e.into_inner()).clone()
     }
 
+    pub fn device_id(&self) -> &str {
+        &self.device_id
+    }
+
+    pub fn device_name(&self) -> &str {
+        &self.device_name
+    }
+
+    pub fn port(&self) -> u16 {
+        self.port
+    }
+
     pub fn sync_with_peer(
         &self,
         peer: &SyncDeviceInfo,
@@ -217,25 +229,42 @@ impl SyncService {
         write_encrypted_handshake(&mut stream, &handshake, &self.pairing_secret)?;
         let remote_handshake = read_encrypted_handshake(&mut stream, &self.pairing_secret)?;
 
-        // Merge remote pages into local DB
+        // Merge remote pages into local DB. A page that exists on both sides
+        // with different timestamps is a real conflict: we do NOT silently
+        // overwrite the local copy. Instead we record a SyncConflict so the UI
+        // can surface it, and keep the local version. Only genuinely new pages
+        // (absent locally) or identical ones are applied.
         let db_guard = db.lock().map_err(|e| e.to_string())?;
-        let local_pages: HashMap<String, String> = db_guard
+        let local_pages: HashMap<String, Page> = db_guard
             .get_all_pages_for_sync()
             .map_err(|e| e.to_string())?
-            .iter()
-            .map(|p| (p.id.clone(), p.updated_at.clone()))
+            .into_iter()
+            .map(|p| (p.id.clone(), p))
             .collect();
 
-        let conflicts = Vec::new();
+        let mut conflicts = Vec::new();
         for remote_meta in &remote_handshake.page_metas {
-            if let Some(local_updated) = local_pages.get(&remote_meta.id) {
-                if local_updated == &remote_meta.updated_at {
+            match local_pages.get(&remote_meta.id) {
+                Some(local) if local.updated_at == remote_meta.updated_at => {
                     continue;
                 }
+                Some(local) => {
+                    // Both sides have the page but disagree on content/time.
+                    // Do not clobber local; report the conflict instead.
+                    conflicts.push(SyncConflict {
+                        page_id: remote_meta.id.clone(),
+                        local_updated: local.updated_at.clone(),
+                        remote_updated: remote_meta.updated_at.clone(),
+                        local_title: local.title.clone(),
+                        remote_title: remote_meta.title.clone(),
+                    });
+                }
+                None => {
+                    db_guard
+                        .upsert_page_from_sync(remote_meta)
+                        .map_err(|e| e.to_string())?;
+                }
             }
-            db_guard
-                .upsert_page_from_sync(remote_meta)
-                .map_err(|e| e.to_string())?;
         }
 
         drop(db_guard);

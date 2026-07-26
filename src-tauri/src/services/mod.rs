@@ -1,5 +1,6 @@
 pub mod crdt;
 pub mod encryption;
+pub mod kdf;
 pub mod export_import;
 pub mod html_export;
 pub mod importers;
