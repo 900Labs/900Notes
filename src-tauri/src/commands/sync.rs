@@ -17,11 +17,15 @@ pub fn start_sync(
     // Reuse a stable device identity across restarts so peers can recognize
     // this machine. Persist it (and the chosen name) in settings on first use.
     let db = state.db.lock().map_err(|e| e.to_string())?;
-    let device_id = match db.get_setting("sync.device_id").map_err(|e| e.to_string())? {
+    let device_id = match db
+        .get_setting("sync.device_id")
+        .map_err(|e| e.to_string())?
+    {
         Some(id) if !id.is_empty() => id,
         _ => {
             let id = uuid::Uuid::new_v4().to_string();
-            db.set_setting("sync.device_id", &id).map_err(|e| e.to_string())?;
+            db.set_setting("sync.device_id", &id)
+                .map_err(|e| e.to_string())?;
             id
         }
     };
@@ -29,13 +33,11 @@ pub fn start_sync(
         .get_setting("sync.device_name")
         .map_err(|e| e.to_string())?
         .filter(|n| !n.is_empty());
-    let name = device_name
-        .or(stored_name)
-        .unwrap_or_else(|| {
-            std::env::var("HOSTNAME")
-                .or_else(|_| std::env::var("COMPUTERNAME"))
-                .unwrap_or_else(|_| "900Notes Device".to_string())
-        });
+    let name = device_name.or(stored_name).unwrap_or_else(|| {
+        std::env::var("HOSTNAME")
+            .or_else(|_| std::env::var("COMPUTERNAME"))
+            .unwrap_or_else(|_| "900Notes Device".to_string())
+    });
     db.set_setting("sync.device_name", &name)
         .map_err(|e| e.to_string())?;
     drop(db);

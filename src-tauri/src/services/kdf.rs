@@ -81,8 +81,14 @@ mod tests {
 
     #[test]
     fn argon2_is_deterministic_for_same_inputs() {
-        let a = derive_key("correct horse battery staple", b"abcdef0123456789abcdef0123456789");
-        let b = derive_key("correct horse battery staple", b"abcdef0123456789abcdef0123456789");
+        let a = derive_key(
+            "correct horse battery staple",
+            b"abcdef0123456789abcdef0123456789",
+        );
+        let b = derive_key(
+            "correct horse battery staple",
+            b"abcdef0123456789abcdef0123456789",
+        );
         assert_eq!(a, b);
     }
 

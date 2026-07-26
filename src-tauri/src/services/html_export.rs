@@ -44,11 +44,7 @@ fn safe_href(url: &str) -> &str {
                 if i == 0 {
                     c.is_ascii_lowercase()
                 } else {
-                    c.is_ascii_lowercase()
-                        || c.is_ascii_digit()
-                        || c == '+'
-                        || c == '-'
-                        || c == '.'
+                    c.is_ascii_lowercase() || c.is_ascii_digit() || c == '+' || c == '-' || c == '.'
                 }
             });
             if looks_like_scheme
@@ -374,9 +370,15 @@ mod tests {
 
     #[test]
     fn safe_href_allows_http_https_mailto_and_fragments() {
-        assert_eq!(safe_href("https://example.com/path"), "https://example.com/path");
+        assert_eq!(
+            safe_href("https://example.com/path"),
+            "https://example.com/path"
+        );
         assert_eq!(safe_href("http://example.com"), "http://example.com");
-        assert_eq!(safe_href("mailto:user@example.com"), "mailto:user@example.com");
+        assert_eq!(
+            safe_href("mailto:user@example.com"),
+            "mailto:user@example.com"
+        );
         assert_eq!(safe_href("tel:+18005550100"), "tel:+18005550100");
         assert_eq!(safe_href("#section"), "#section");
         assert_eq!(safe_href("/relative/path"), "/relative/path");

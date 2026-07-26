@@ -98,11 +98,7 @@ impl EncryptionService {
     }
 
     pub fn integrity_path(&self) -> PathBuf {
-        PathBuf::from(format!(
-            "{}{}",
-            self.db_path.display(),
-            INTEGRITY_SUFFIX
-        ))
+        PathBuf::from(format!("{}{}", self.db_path.display(), INTEGRITY_SUFFIX))
     }
 
     pub fn is_encrypted(&self) -> bool {
@@ -319,7 +315,11 @@ impl EncryptionService {
     /// plaintext recovery file. Should be called whenever we know the plaintext
     /// on disk reflects a state we authored — after unlock, enable, or a
     /// checkpoint of the running session.
-    pub fn write_integrity_tag(&self, passphrase: &str, plain_db_path: &Path) -> Result<(), String> {
+    pub fn write_integrity_tag(
+        &self,
+        passphrase: &str,
+        plain_db_path: &Path,
+    ) -> Result<(), String> {
         if !self.is_encrypted() {
             return Ok(());
         }
@@ -342,7 +342,11 @@ impl EncryptionService {
     /// HMAC sidecar bound to the encrypted snapshot. A missing plaintext, a
     /// missing sidecar, or a mismatch all return `Ok(false)` so the caller can
     /// re-derive the database from the authoritative snapshot.
-    pub fn verify_integrity_tag(&self, passphrase: &str, plain_db_path: &Path) -> Result<bool, String> {
+    pub fn verify_integrity_tag(
+        &self,
+        passphrase: &str,
+        plain_db_path: &Path,
+    ) -> Result<bool, String> {
         if !plain_db_path.exists() || !self.integrity_path().exists() {
             return Ok(false);
         }
@@ -352,8 +356,8 @@ impl EncryptionService {
 
         let plaintext = std::fs::read(plain_db_path)
             .map_err(|e| format!("Read plaintext for integrity check: {e}"))?;
-        let stored = std::fs::read(self.integrity_path())
-            .map_err(|e| format!("Read integrity tag: {e}"))?;
+        let stored =
+            std::fs::read(self.integrity_path()).map_err(|e| format!("Read integrity tag: {e}"))?;
         if stored.len() != TAG_LEN {
             return Ok(false);
         }
@@ -426,7 +430,9 @@ mod tests {
         let (path, service) = fixture();
         std::fs::write(&path, b"notes").unwrap();
         service.enable_encryption("old passphrase", &path).unwrap();
-        service.change_passphrase("old passphrase", "new passphrase", &path).unwrap();
+        service
+            .change_passphrase("old passphrase", "new passphrase", &path)
+            .unwrap();
         assert!(path.exists());
         assert!(!service.verify_passphrase("old passphrase").unwrap());
         assert!(service.verify_passphrase("new passphrase").unwrap());
@@ -487,8 +493,7 @@ pub fn encrypt_data(plaintext: &[u8], passphrase: &str) -> Result<Vec<u8>, Strin
         .encrypt(nonce, plaintext)
         .map_err(|e| format!("AES encrypt: {e}"))?;
 
-    let mut result =
-        Vec::with_capacity(1 + salt.len() + nonce_bytes.len() + ciphertext.len());
+    let mut result = Vec::with_capacity(1 + salt.len() + nonce_bytes.len() + ciphertext.len());
     result.push(ENCRYPTED_DATA_VERSION);
     result.extend_from_slice(&salt);
     result.extend_from_slice(&nonce_bytes);

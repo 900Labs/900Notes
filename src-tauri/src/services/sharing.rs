@@ -107,9 +107,8 @@ pub fn import_share_bundle(
         }
     }
 
-    let remap_id = |id: &str| -> String {
-        id_remap.get(id).cloned().unwrap_or_else(|| id.to_string())
-    };
+    let remap_id =
+        |id: &str| -> String { id_remap.get(id).cloned().unwrap_or_else(|| id.to_string()) };
 
     let mut count = 0;
     for page in &bundle.pages {
@@ -280,7 +279,12 @@ mod tests {
                 r#"{"type":"doc","evil":true}"#,
                 "9999-01-01T00:00:00Z",
             ),
-            page("fresh", "New page", r#"{"type":"doc"}"#, "2026-06-01T00:00:00Z"),
+            page(
+                "fresh",
+                "New page",
+                r#"{"type":"doc"}"#,
+                "2026-06-01T00:00:00Z",
+            ),
         ]);
 
         let count = import_share_bundle(&db, &crafted).unwrap();
