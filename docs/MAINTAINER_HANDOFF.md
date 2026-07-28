@@ -43,7 +43,7 @@ The broader local gate also runs the Rust dependency audit:
 
 1. Complete the manual checks in `docs/AUDIT_REPORT.md` on a disposable workspace.
 2. Run the release gate on macOS, Windows, and Linux.
-3. Configure platform signing and macOS notarization in repository secrets. Do not place credentials in the repository.
+3. Configure platform signing and macOS notarization in repository secrets. Do not place credentials in the repository. See [docs/CODE_SIGNING.md](CODE_SIGNING.md) for the required secrets and the signed release workflow.
 4. Build release artifacts from the exact 1.6.0 commit.
 5. Record SHA-256 checksums and installation results.
 6. Create the annotated `v1.6.0` tag only after the reviewed commit and checks are final.

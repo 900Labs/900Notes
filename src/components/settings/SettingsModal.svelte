@@ -7,6 +7,12 @@
   import { pluginStore } from '../../stores/plugins.svelte'
   import { t, locales, setLocale, type Locale } from '../../i18n'
   import * as api from '../../lib/api'
+  import {
+    checkForUpdate,
+    downloadAndInstallUpdate,
+    type UpdateStatus,
+    type PendingUpdate,
+  } from '../../lib/updater'
 
   type SettingsSection = 'appearance' | 'language' | 'data' | 'sync' | 'sharing' | 'workspaces' | 'security' | 'plugins' | 'about'
 
@@ -24,6 +30,8 @@
   let syncPairingSecret = $state('')
   let importStatus = $state<{ type: 'success' | 'error'; message: string } | null>(null)
   let appVersion = $state('1.6.0')
+  let updateStatus = $state<UpdateStatus>({ state: 'idle' })
+  let pendingUpdate = $state<PendingUpdate | null>(null)
 
   onMount(async () => {
     try {
@@ -40,6 +48,23 @@
     if (initialSection === 'security') encryptionStore.checkStatus()
     if (initialSection === 'plugins') pluginStore.loadPlugins()
   })
+
+  async function handleCheckForUpdate() {
+    updateStatus = { state: 'checking' }
+    const result = await checkForUpdate()
+    updateStatus = result.status
+    pendingUpdate = result.update
+  }
+
+  async function handleDownloadAndInstall() {
+    if (!pendingUpdate) return
+    await pageStore.flushPendingEdits?.()
+    updateStatus = { state: 'downloading', progress: 0 }
+    const result = await downloadAndInstallUpdate(pendingUpdate, (progress) => {
+      updateStatus = { state: 'downloading', progress }
+    })
+    updateStatus = result
+  }
 
   async function handleExport() {
     await pageStore.flushPendingEdits?.()
@@ -905,6 +930,41 @@
           <div>
             <span class="text-gray-500 dark:text-gray-400">{$t('settings.license')}: </span>
             <span class="font-medium">Apache 2.0</span>
+          </div>
+          <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
+            <div class="flex items-center gap-3 mb-2">
+              <button
+                onclick={handleCheckForUpdate}
+                disabled={updateStatus.state === 'checking' || updateStatus.state === 'downloading' || updateStatus.state === 'restarting'}
+                class="px-4 py-2 rounded-lg text-sm font-medium bg-accent text-white hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              >{$t('update.check')}</button>
+              {#if updateStatus.state === 'checking'}
+                <span class="text-xs text-gray-500 dark:text-gray-400">{$t('update.checking')}</span>
+              {:else if updateStatus.state === 'available'}
+                <span class="text-xs text-green-600 dark:text-green-400">
+                  {$t('update.available', { version: updateStatus.version })}
+                </span>
+              {:else if updateStatus.state === 'not-available'}
+                <span class="text-xs text-gray-500 dark:text-gray-400">{$t('update.upToDate')}</span>
+              {:else if updateStatus.state === 'downloading'}
+                <span class="text-xs text-gray-500 dark:text-gray-400">{$t('update.downloading', { progress: updateStatus.progress })}</span>
+              {:else if updateStatus.state === 'restarting'}
+                <span class="text-xs text-gray-500 dark:text-gray-400">{$t('update.restarting')}</span>
+              {:else if updateStatus.state === 'error'}
+                <span class="text-xs text-red-500">{$t('update.error')}</span>
+              {/if}
+            </div>
+            {#if updateStatus.state === 'available' && pendingUpdate}
+              {#if pendingUpdate.body}
+                <div class="mb-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800 text-xs text-gray-600 dark:text-gray-400 whitespace-pre-line max-h-40 overflow-y-auto">
+                  {pendingUpdate.body}
+                </div>
+              {/if}
+              <button
+                onclick={handleDownloadAndInstall}
+                class="px-4 py-2 rounded-lg text-sm font-medium bg-green-600 text-white hover:bg-green-700"
+              >{$t('update.install')}</button>
+            {/if}
           </div>
           <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
             <p class="text-gray-600 dark:text-gray-400">
