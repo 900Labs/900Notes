@@ -23,6 +23,7 @@ A sorted guide to public docs, runbooks, and references for 900Notes.
 - [Mobile Companion](MOBILE.md) - read-only mobile build architecture and CSP
 - [Functionality Benchmark](FUNCTIONALITY_BENCHMARK.md) - comparison against adjacent note apps and current product gaps
 - [Maintainer Handoff](MAINTAINER_HANDOFF.md) - post-audit remediation summary and review checklist
+- [Code Signing](CODE_SIGNING.md) - release signing secrets, credentials, and signed build flow
 
 ## Governance
 
