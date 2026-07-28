@@ -34,7 +34,7 @@ sha2 = "0.10"
 argon2 = "0.5"
 hmac = "0.12"
 base64 = "0.22"
-roxmltree = "0.20"
+roxmltree = "0.21"
 getrandom = "0.2"
 
 [features]
