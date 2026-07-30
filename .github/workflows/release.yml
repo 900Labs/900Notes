@@ -28,7 +28,6 @@ jobs:
     env:
       TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
       TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-      HAS_APPLE: ${{ secrets.APPLE_CERTIFICATE != '' && secrets.APPLE_SIGNING_IDENTITY != '' && secrets.APPLE_ID != '' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -46,22 +45,17 @@ jobs:
       - run: npm ci
       - run: cargo install tauri-cli --version 2.11.4 --locked
 
-      - name: Expose Apple signing credentials
-        if: ${{ env.HAS_APPLE == 'true' }}
+      - name: Clear any stray Apple signing env vars
         run: |
-          echo "APPLE_CERTIFICATE=${{ secrets.APPLE_CERTIFICATE }}" >> "$GITHUB_ENV"
-          echo "APPLE_CERTIFICATE_PASSWORD=${{ secrets.APPLE_CERTIFICATE_PASSWORD }}" >> "$GITHUB_ENV"
-          echo "APPLE_SIGNING_IDENTITY=${{ secrets.APPLE_SIGNING_IDENTITY }}" >> "$GITHUB_ENV"
-          echo "APPLE_ID=${{ secrets.APPLE_ID }}" >> "$GITHUB_ENV"
-          echo "APPLE_PASSWORD=${{ secrets.APPLE_PASSWORD }}" >> "$GITHUB_ENV"
-          echo "APPLE_TEAM_ID=${{ secrets.APPLE_TEAM_ID }}" >> "$GITHUB_ENV"
+          for var in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID; do
+            if [ -n "$(eval echo \${$var:-})" ]; then
+              echo "WARNING: $var is set in the environment; clearing it to prevent codesign import failure"
+              echo "$var=" >> "$GITHUB_ENV"
+            fi
+          done
 
       - name: macOS Tauri bundle
         run: npm run tauri:build
-
-      - name: Verify code signature
-        if: ${{ env.HAS_APPLE == 'true' }}
-        run: codesign -dv --verbose=4 src-tauri/target/release/bundle/macos/*.app
 
       - name: Generate DMG checksum
         run: |
@@ -70,8 +64,7 @@ jobs:
 
       - name: Determine artifact label
         id: label
-        run: |
-          if [ "$HAS_APPLE" = "true" ]; then echo "kind=signed" >> "$GITHUB_OUTPUT"; else echo "kind=unsigned" >> "$GITHUB_OUTPUT"; fi
+        run: echo "kind=unsigned" >> "$GITHUB_OUTPUT"
 
       - uses: actions/upload-artifact@v4
         with:
